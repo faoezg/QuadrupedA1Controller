@@ -90,13 +90,29 @@ class Trajectory_Planner:
         self.legID = legID
         self.phaseLen = phaseLen
         self.EPub = EPub
-    
+        self.kinematics = TwoLink_Kinematics()
+        
     def stand_phase(self, position):
         """Stand still at a certain point in x-y plane"""
-        self.EPub.goal_pos = np.add(self.EPub.goal_pos, [0,0,0,
-                                                         0,0,0,
-                                                         0,0,0,
-                                                         0,0,0])
+        
+        #Calculate IK for that Position
+        th1, th2 = self.kinematics.inverse_kinematics(*position)
+        
+        if self.legID == 0: #front left
+            self.EPub.goal_pos[0] = th2
+            self.EPub.goal_pos[2] = th1
+        if self.legID == 1: #front right
+            self.EPub.goal_pos[3] = th2
+            self.EPub.goal_pos[5] = th1
+        if self.legID == 2: #rear left
+            self.EPub.goal_pos[6] = th2
+            self.EPub.goal_pos[8] = th1
+        if self.legID == 3: #rear right
+            self.EPub.goal_pos[9] = th2
+            self.EPub.goal_pos[11] = th1
+            
+    def swing_phase(self):
+        return
         
         
         
@@ -142,6 +158,11 @@ class EffortPublisher:
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
         
+        self.FL_planner = Trajectory_Planner(0,10,self)
+        self.FR_planner = Trajectory_Planner(1,10,self)
+        self.RL_planner = Trajectory_Planner(2,10,self)
+        self.RR_planner = Trajectory_Planner(3,10,self)
+        
         
     def publish_efforts(self):
         
@@ -156,6 +177,7 @@ class EffortPublisher:
                 self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.05))
 
             self.rate.sleep()
+            self.FL_planner.stand_phase([-0.18, -0.18])
         
     def joint_states_callback(self, data):
         self.positions = data.position
