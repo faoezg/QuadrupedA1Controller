@@ -22,7 +22,12 @@ th1_max = 4.18
 th1_min = -1.05
 th2_max = -0.92
 th2_min = -2.69
+max_eff = 33.5
 
+joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
+                       "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
+                       "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
+                       "RR_calf_joint","RR_hip_joint","RR_thigh_joint"]
 """Snippet from JointStates Message:
 name: 
   - FL_calf_joint
@@ -66,8 +71,8 @@ class TwoLink_Kinematics:
         num_c = posY*(-self.a1 - self.a2*np.cos(th2)) - self.a2*np.sin(th2)*posX
         denom = self.a1**2 + self.a2**2 + 2*self.a1*self.a2*np.cos(th2)
         
-        sin_th1 = num_s
-        cos_th1 = num_c
+        sin_th1 = num_s/denom
+        cos_th1 = num_c/denom
                 
         th1 = np.arctan2(sin_th1, cos_th1)
         return th1
@@ -139,20 +144,14 @@ class EffortPublisher:
         
         
     def publish_efforts(self):
-        joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
-                       "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
-                       "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
-                       "RR_calf_joint","RR_hip_joint","RR_thigh_joint"]
+        
         
         while not rospy.is_shutdown():
-            # get "current params" (position/velocity/effort) from /a1_gazebo/joint_states
-            
-            efforts = self.calculate_joint_effort()
-            
+            """calculate and publish efforts"""
+            efforts = self.calculate_joint_effort()            
             for i, eff in enumerate(efforts):
-                
-                if(np.abs(eff) > 33.5):  # check wether calculated effort is bigger than the robots max
-                    eff = np.sign(eff) * 33.5
+                if(np.abs(eff) > max_eff): 
+                    eff = np.sign(eff) * max_eff
 
                 self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.05))
 
@@ -165,9 +164,10 @@ class EffortPublisher:
     def calculate_joint_effort(self):
         position_error = np.subtract(self.goal_pos,self.positions)
         velocity_error = np.subtract(self.goal_vel,self.velocities)
-        #print("Position Error:", position_error)
+
         control_effort = np.add(Kp * position_error,Kd * velocity_error)
         return control_effort
+
 
 if __name__ == '__main__':
     try:
