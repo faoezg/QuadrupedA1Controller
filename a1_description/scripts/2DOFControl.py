@@ -92,28 +92,53 @@ class Trajectory_Planner:
         self.EPub = EPub
         self.kinematics = TwoLink_Kinematics()
         
-    def stand_phase(self, position):
+    def fixed_point(self, position):
         """Stand still at a certain point in x-y plane"""
         
         #Calculate IK for that Position
         th1, th2 = self.kinematics.inverse_kinematics(*position)
         
-        if self.legID == 0: #front left
-            self.EPub.goal_pos[0] = th2
-            self.EPub.goal_pos[2] = th1
-        if self.legID == 1: #front right
+        if self.legID == 0:  #front left
+            self.EPub.goal_pos[0] = th2  # calf
+            self.EPub.goal_pos[2] = th1  # thigh
+        if self.legID == 1:  #front right
             self.EPub.goal_pos[3] = th2
             self.EPub.goal_pos[5] = th1
-        if self.legID == 2: #rear left
+        if self.legID == 2:  #rear left
             self.EPub.goal_pos[6] = th2
             self.EPub.goal_pos[8] = th1
-        if self.legID == 3: #rear right
+        if self.legID == 3:  #rear right
             self.EPub.goal_pos[9] = th2
             self.EPub.goal_pos[11] = th1
-            
-    def swing_phase(self):
-        return
+
         
+    def swing_phase(self,x,y,time):
+        time = time % self.phaseLen
+        
+        if(time < self.phaseLen/2):
+            x+=0.008*time
+            y += 0.1* np.sin(time/12.5)
+
+        else:
+            x += 0.008*self.phaseLen/2
+            x-=0.008*(time - self.phaseLen/2)
+
+        th1, th2 = self.kinematics.inverse_kinematics(x,y)
+            
+        
+        if self.legID == 0:  #front left
+                self.EPub.goal_pos[0] = th2  # calf
+                self.EPub.goal_pos[2] = th1  # thigh
+        if self.legID == 1:  #front right
+                self.EPub.goal_pos[3] = th2
+                self.EPub.goal_pos[5] = th1
+        if self.legID == 2:  #rear left
+                self.EPub.goal_pos[6] = th2
+                self.EPub.goal_pos[8] = th1
+        if self.legID == 3:  #rear right
+                self.EPub.goal_pos[9] = th2
+                self.EPub.goal_pos[11] = th1
+        return    
         
         
 class EffortPublisher:
@@ -122,28 +147,6 @@ class EffortPublisher:
         rospy.wait_for_service('/gazebo/apply_joint_effort')
         self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
-
-        """   DIDNT WORK AHAHA
-        command_topics = [
-                          "/a1_gazebo/FL_calf_controller/command",  
-                          "/a1_gazebo/FL_hip_controller/command",
-                          "/a1_gazebo/FL_thigh_controller/command",
-                          "/a1_gazebo/FR_calf_controller/command",
-                          "/a1_gazebo/FR_hip_controller/command",
-                          "/a1_gazebo/FR_thigh_controller/command",
-                          "/a1_gazebo/RL_calf_controller/command",
-                          "/a1_gazebo/RL_hip_controller/command",
-                          "/a1_gazebo/RL_thigh_controller/command",
-                          "/a1_gazebo/RR_calf_controller/command",
-                          "/a1_gazebo/RR_hip_controller/command",
-                          "/a1_gazebo/RR_thigh_controller/command",
-                          ]
-
-        self.publishers = []
-        for i in range(len(command_topics)):
-            self.publishers.append(rospy.Publisher(command_topics[i], MotorCmd, queue_size = 0))
-        
-        """
         self.rate = rospy.Rate(20)
         
         self.positions = np.array([0,0,0,0,0,0,
@@ -158,26 +161,44 @@ class EffortPublisher:
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
         
-        self.FL_planner = Trajectory_Planner(0,10,self)
-        self.FR_planner = Trajectory_Planner(1,10,self)
-        self.RL_planner = Trajectory_Planner(2,10,self)
-        self.RR_planner = Trajectory_Planner(3,10,self)
+        self.FL_planner = Trajectory_Planner(0,50,self)
+        self.FR_planner = Trajectory_Planner(1,50,self)
+        self.RL_planner = Trajectory_Planner(2,50,self)
+        self.RR_planner = Trajectory_Planner(3,50,self)
         
         
     def publish_efforts(self):
-        
-        
+        X = -0.15
+        Y = -0.225
+        """ CONTROL LOOP """
+        t = 0
         while not rospy.is_shutdown():
-            """calculate and publish efforts"""
+            
+            """ calculate and publish efforts """
             efforts = self.calculate_joint_effort()            
+            
             for i, eff in enumerate(efforts):
                 if(np.abs(eff) > max_eff): 
                     eff = np.sign(eff) * max_eff
 
                 self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.05))
 
+            """ calculate next positions """
+            
+            #self.FL_planner.fixed_point([X, Y])
+            #self.FR_planner.fixed_point([-0.18, Z])
+            self.FR_planner.swing_phase(X,Y,t)
+            self.FL_planner.swing_phase(X,Y,t+25)
+
+            self.RR_planner.swing_phase(X,Y,t+25)
+            self.RL_planner.swing_phase(X,Y,t)
+
+
+            #X += 0.01
+            #Z += 0.01
+            t+=1
             self.rate.sleep()
-            self.FL_planner.stand_phase([-0.18, -0.18])
+         
         
     def joint_states_callback(self, data):
         self.positions = data.position
