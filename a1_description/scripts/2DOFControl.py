@@ -25,9 +25,9 @@ th2_min = -2.69
 max_eff = 33.5
 
 joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
-                       "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
-                       "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
-                       "RR_calf_joint","RR_hip_joint","RR_thigh_joint"]
+                "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
+                "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
+                "RR_calf_joint","RR_hip_joint","RR_thigh_joint"]
 """Snippet from JointStates Message:
 name: 
   - FL_calf_joint
@@ -116,13 +116,15 @@ class Trajectory_Planner:
         time = time % self.phaseLen
         
         if(time < self.phaseLen/2):
-            x+=0.008*time
-            y += 0.1* np.sin(time/12.5)
+            x+=0.004*time
+            y += 0.05* np.sin(time/(self.phaseLen/4))
 
         else:
-            x += 0.008*self.phaseLen/2
-            x-=0.008*(time - self.phaseLen/2)
-
+            x += 0.004*self.phaseLen/2
+            x-=0.004*(time - self.phaseLen/2)
+        
+                
+        
         th1, th2 = self.kinematics.inverse_kinematics(x,y)
             
         
@@ -139,6 +141,45 @@ class Trajectory_Planner:
                 self.EPub.goal_pos[9] = th2
                 self.EPub.goal_pos[11] = th1
         return    
+    
+    def swing_func(self,x,y,t):
+
+        t = t % self.phaseLen
+        if self.legID == 0:
+            if 0<= t <25:
+                y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
+                x+=0.004*t
+                
+        if self.legID == 1:
+            if 25<= t <50:
+                y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
+                x+=0.004*(t-25)
+            
+        if self.legID == 3:    
+            if 50<= t <75:
+                y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
+                x+=0.004*(t-50)
+
+        if self.legID == 2:
+            if 75<= t <100:
+                y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
+                x+=0.004*(t-75)
+            
+            
+            
+        th1, th2 = self.kinematics.inverse_kinematics(x,y)
+        if self.legID == 0:  #front left
+                self.EPub.goal_pos[0] = th2  # calf
+                self.EPub.goal_pos[2] = th1  # thigh
+        if self.legID == 1:  #front right
+                self.EPub.goal_pos[3] = th2
+                self.EPub.goal_pos[5] = th1
+        if self.legID == 2:  #rear left
+                self.EPub.goal_pos[6] = th2
+                self.EPub.goal_pos[8] = th1
+        if self.legID == 3:  #rear right
+                self.EPub.goal_pos[9] = th2
+                self.EPub.goal_pos[11] = th1
         
         
 class EffortPublisher:
@@ -147,7 +188,7 @@ class EffortPublisher:
         rospy.wait_for_service('/gazebo/apply_joint_effort')
         self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
-        self.rate = rospy.Rate(20)
+        self.rate = rospy.Rate(100)
         
         self.positions = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
@@ -155,21 +196,27 @@ class EffortPublisher:
         self.velocities = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
         
-        self.goal_pos = np.array([-1.0, 0, 0.5, -1, 0, 0.5, 
-                                  -1.0, 0, 0.5, -1, 0, 0.5])
+        
+        X = -0.175
+        Y = -0.3
+        ik = TwoLink_Kinematics()
+        th1, th2 = ik.inverse_kinematics(X,Y)
+
+        self.goal_pos = np.array([th2, 0, th1, th2, 0, th1, 
+                                  th2, 0, th1, th2, 0, th1])
         
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
         
-        self.FL_planner = Trajectory_Planner(0,50,self)
-        self.FR_planner = Trajectory_Planner(1,50,self)
-        self.RL_planner = Trajectory_Planner(2,50,self)
-        self.RR_planner = Trajectory_Planner(3,50,self)
+        self.FL_planner = Trajectory_Planner(0,100,self)
+        self.FR_planner = Trajectory_Planner(1,100,self)
+        self.RL_planner = Trajectory_Planner(2,100,self)
+        self.RR_planner = Trajectory_Planner(3,100,self)
         
         
     def publish_efforts(self):
-        X = -0.15
-        Y = -0.225
+        X = -0.175
+        Y = -0.25
         """ CONTROL LOOP """
         t = 0
         while not rospy.is_shutdown():
@@ -181,21 +228,23 @@ class EffortPublisher:
                 if(np.abs(eff) > max_eff): 
                     eff = np.sign(eff) * max_eff
 
-                self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.05))
+                self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
 
             """ calculate next positions """
             
             #self.FL_planner.fixed_point([X, Y])
             #self.FR_planner.fixed_point([-0.18, Z])
-            self.FR_planner.swing_phase(X,Y,t)
-            self.FL_planner.swing_phase(X,Y,t+25)
+            """self.FR_planner.swing_func(X,Y,t)
+            self.FL_planner.swing_func(X,Y,t)
 
-            self.RR_planner.swing_phase(X,Y,t+25)
+            self.RR_planner.swing_func(X,Y,t)
+            self.RL_planner.swing_func(X,Y,t)"""
+            self.FR_planner.swing_phase(X,Y,t)
+            self.FL_planner.swing_phase(X,Y,t+50)
+
+            self.RR_planner.swing_phase(X,Y,t+50)
             self.RL_planner.swing_phase(X,Y,t)
 
-
-            #X += 0.01
-            #Z += 0.01
             t+=1
             self.rate.sleep()
          
