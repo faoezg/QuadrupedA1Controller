@@ -150,12 +150,12 @@ class Trajectory_Planner:
                 y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
                 x+=0.004*t
                 
-        if self.legID == 1:
+        if self.legID == 3:
             if 25<= t <50:
                 y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
                 x+=0.004*(t-25)
             
-        if self.legID == 3:    
+        if self.legID == 1:    
             if 50<= t <75:
                 y = 0.05*np.abs(np.sin(t*np.pi/25)) + y
                 x+=0.004*(t-50)
@@ -215,7 +215,8 @@ class EffortPublisher:
         
         
     def publish_efforts(self):
-        X = -0.175
+        #X = -0.175  # for continuous walking
+        X = 0.0  # for step by step
         Y = -0.25
         """ CONTROL LOOP """
         t = 0
@@ -234,16 +235,16 @@ class EffortPublisher:
             
             #self.FL_planner.fixed_point([X, Y])
             #self.FR_planner.fixed_point([-0.18, Z])
-            """self.FR_planner.swing_func(X,Y,t)
+            self.FR_planner.swing_func(X,Y,t)
             self.FL_planner.swing_func(X,Y,t)
 
             self.RR_planner.swing_func(X,Y,t)
-            self.RL_planner.swing_func(X,Y,t)"""
-            self.FR_planner.swing_phase(X,Y,t)
+            self.RL_planner.swing_func(X,Y,t)
+            """self.FR_planner.swing_phase(X,Y,t)
             self.FL_planner.swing_phase(X,Y,t+50)
 
             self.RR_planner.swing_phase(X,Y,t+50)
-            self.RL_planner.swing_phase(X,Y,t)
+            self.RL_planner.swing_phase(X,Y,t)"""
 
             t+=1
             self.rate.sleep()
