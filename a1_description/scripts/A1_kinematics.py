@@ -2,7 +2,7 @@
 import numpy as np
 
 # our constant a0,a1,a2 DH Parameters 
-a0,a2,a3 = [8.38,20.0,20.0]
+a0,a2,a3 = [8.38, 20.0, 20.0]
 
 # constants
 th0_max = 0.80
