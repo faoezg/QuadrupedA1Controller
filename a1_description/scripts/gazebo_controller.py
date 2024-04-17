@@ -22,7 +22,7 @@ th1_max = 4.18
 th1_min = -1.05
 th2_max = -0.92
 th2_min = -2.69
-max_eff = 33.5
+max_eff = 55
 
 joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
                 "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
@@ -39,16 +39,17 @@ class Trajectory_Planner:
         
         # schwungphase
         if t <= tgp/2:
-            y = 0.1*np.sin(np.pi*(t/(tgp/2))) - (self.Rh-0.10)
-            z = 0.03*t
+            y = 10*np.sin(np.pi*(t/(tgp/2))) - (self.Rh)
+            z = 3*t
         else:
-            y = -(self.Rh-0.1)
+            y = -(self.Rh)
         
         if t > tgp/2:
-            z = (tgp/2)*0.03 + 0.03*((tgp/2)-t) 
+            z = (tgp/2)*3 + 3*((tgp/2)-t) 
             
-        print(y,z)      
-        return y,z
+        print(y,z)
+        x = 8.38      
+        return x,y,z
         
 
         
@@ -58,30 +59,29 @@ class EffortPublisher:
         rospy.wait_for_service('/gazebo/apply_joint_effort')
         self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
-        rospy.Subscriber("/hihi/joint_states", JointState, self.goal_state_callback)
         
-        self.rate = rospy.Rate(100)
+        self.rate = rospy.Rate(200)
         
         self.positions = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
         
         self.velocities = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
-        
-                    
-
-        #pos_fr = [13.857525967328343, 0.07049528719526688, 38.41996789425385]
-        #self.X = pos_fr[2]
+                            
         #self.ik = A1_kinematics.InverseKinematics()
         
         #pos_thetas = A1_kinematics.calc_joint_angles(pos_fr)
         #thetas = pos_thetas[0]
 
-        self.goal_pos = np.array([0,0,0,0,0,0,
-                                  0,0,0,0,0,0])
+        self.goal_pos = np.array([-1.5708,0,0.785398,-1.5708,0,0.785398,
+                                 -1.5708,0,0.785398,-1.5708,0,0.785398])
         
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
+        
+        self.base_height = 20
+        self.length_offset = 0
+        self.base_width = 8.38
         
         
     def publish_efforts(self):
@@ -89,19 +89,37 @@ class EffortPublisher:
         
         t = 0
         while not rospy.is_shutdown():
+            downscaler = 300
+            if 0<=t<50: # test length shift
+                self.length_offset -= 100/(4*downscaler)
+            elif 50<=t<150:
+                self.length_offset += 100/(4*downscaler)
+            elif 150<=t<200:
+                self.length_offset -= 100/(4*downscaler)
             
-            #if t % 10 == 0:
-
-                # operator space goal
-                #Y,Z = tp.step_trajectory(0.1,0.1,10,t/10)
+            if 200<=t<250: # test squat
+                self.base_height -= 50/downscaler
+            elif 250<=t<350:
+                self.base_height += 50/downscaler  
+            elif 350<=t<400:
+                self.base_height -= 50/downscaler
                 
-                # joint space goal
-                #pos_thetas = A1_kinematics.calc_joint_angles([self.X,Y,Z])
-                #thetas = pos_thetas[0]
-                # add thetas to goal positions
-                #self.goal_pos = [thetas[2],0,thetas[1],thetas[2],0,thetas[1],
-                #                 thetas[2],0,thetas[1],thetas[2],0,thetas[1]]
-
+            if 400<=t<450: # test width shift
+                self.base_width -= 50/downscaler
+            elif 450<=t<550:
+                self.base_width += 50/downscaler  
+            elif 550<=t<600:
+                self.base_width -= 50/downscaler        
+            
+            angles = A1_kinematics.calc_joint_angles([self.base_width, self.base_height, self.length_offset])
+            th0 = angles[0][0]
+            th2 = angles[0][1]
+            th3 = angles[0][2]
+            
+            print(self.base_height)
+            self.goal_pos = [th3, th0, th2 + np.pi/2, th3, th0, th2 + np.pi/2,
+                             th3, th0, th2 + np.pi/2, th3, th0, th2 + np.pi/2]
+            
             efforts = self.calculate_joint_effort()            
             
             for i, eff in enumerate(efforts):
@@ -111,14 +129,13 @@ class EffortPublisher:
                 self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
 
             t+=1
-            t %=100
+            t %= 600
             self.rate.sleep()
          
         
     def joint_states_callback(self, data):
         self.positions = data.position
         self.velocities = data.velocity
-        print(A1_kinematics.get_pw(self.positions[1 + 9],self.positions[0 + 9],self.positions[2 + 9]))
     
     def calculate_joint_effort(self):
         position_error = np.subtract(self.goal_pos,self.positions)
@@ -127,16 +144,6 @@ class EffortPublisher:
         control_effort = np.add(Kp * position_error,Kd * velocity_error)
         return control_effort
     
-    def goal_state_callback(self, data):
-        positions = data.position
-        self.desired_pos_thigh = positions[4]
-        self.desired_pos_calf = positions[5]
-        
-        self.goal_pos = [0,0,0,
-                         0,0,0,
-                         0,0,0,
-                         self.desired_pos_calf,0,self.desired_pos_thigh]
-
 
 if __name__ == '__main__':
     """step_height = 0.1

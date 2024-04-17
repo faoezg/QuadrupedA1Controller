@@ -89,5 +89,5 @@ def calc_joint_angles(position):
     for ts in solutions:  # check whether our ths fit within our joint constraints
         if th0_min <= ts[0] <= th0_max and th2_min <= ts[1] <= th2_max and th3_min <= ts[2] <= th3_max:        
             fitting_ths.append(ts)
-    print(f"Corrent solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
+    # print(f"Corrent solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
     return fitting_ths
