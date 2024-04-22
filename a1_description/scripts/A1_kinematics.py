@@ -62,9 +62,11 @@ class InverseKinematics():
         return [th0_1, th0_2]
 
     
-def calc_joint_angles(position):
-    ik = InverseKinematics(a0,a2,a3)
-    
+def calc_joint_angles(position,left=True):
+    if left == True:
+        ik = InverseKinematics(a0,a2,a3)
+    else:
+        ik = InverseKinematics(-a0,a2,a3)
     # calculate all theta3s (calf):
     th3s = th3_0, th3_1 = ik.calc_theta3(*position)
     

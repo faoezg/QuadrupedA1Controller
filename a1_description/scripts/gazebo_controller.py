@@ -82,7 +82,7 @@ class EffortPublisher:
         self.base_height = 20
         self.length_offset = 0
         self.base_width = 8.38
-        
+        self.base_width_r = 8.38        
         
     def publish_efforts(self):
         tp = Trajectory_Planner()
@@ -106,19 +106,29 @@ class EffortPublisher:
                 
             if 400<=t<450: # test width shift
                 self.base_width -= 50/downscaler
+                self.base_width_r += 50/downscaler
+
             elif 450<=t<550:
                 self.base_width += 50/downscaler  
+                self.base_width_r -= 50/downscaler  
             elif 550<=t<600:
                 self.base_width -= 50/downscaler        
+                self.base_width_r += 50/downscaler  
             
-            angles = A1_kinematics.calc_joint_angles([self.base_width, self.base_height, self.length_offset])
-            th0 = angles[0][0]
-            th2 = angles[0][1]
-            th3 = angles[0][2]
+            angles_l = A1_kinematics.calc_joint_angles([self.base_width, self.base_height, self.length_offset])
+            angles_r = A1_kinematics.calc_joint_angles([self.base_width_r, self.base_height, self.length_offset], False)
+
+            th0_l = angles_l[0][0]
+            th2_l = angles_l[0][1]
+            th3_l = angles_l[0][2]
             
-            print(self.base_height)
-            self.goal_pos = [th3, th0, th2 + np.pi/2, th3, th0, th2 + np.pi/2,
-                             th3, th0, th2 + np.pi/2, th3, th0, th2 + np.pi/2]
+            th0_r = angles_r[0][0]
+            th2_r = angles_r[0][1]
+            th3_r = angles_r[0][2]
+            
+            
+            self.goal_pos = [th3_l, -th0_l, th2_l + np.pi/2, th3_r, th0_r, th2_r + np.pi/2,
+                             th3_l, -th0_l, th2_l + np.pi/2, th3_r, th0_r, th2_r + np.pi/2]
             
             efforts = self.calculate_joint_effort()            
             
