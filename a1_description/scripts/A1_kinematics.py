@@ -14,7 +14,10 @@ th2_min = -1.05 - np.pi/2
 th3_max = -0.92
 th3_min = -2.69
 
-def get_pw(th0, th2, th3):
+def get_pw(th0, th2, th3, isLeft = True):
+    a0 = 8.38
+    a0 = -1*a0 if isLeft == True else a0
+
     px = a0 * np.cos(th0) + np.sin(th0) * (a2 * np.sin(th2) + a3 * np.sin(th2 + th3))
     py = a0 * np.sin(th0) - np.cos(th0) * (a2 * np.sin(th2) + a3 * np.sin(th2 + th3))
     pz = a2 * np.cos(th2) + a3 * np.cos(th2 + th3)
@@ -49,11 +52,11 @@ class InverseKinematics():
         return th21, th22
     
     def calc_theta0(self, px, py):
-        c0 = (a0*px - py*(np.sqrt(px**2 + py**2 - a0**2))) # case positive sqrt
-        c0_1 = (a0*px + py*(np.sqrt(px**2 + py**2 - a0**2)))  # case negative sqrt
+        c0 = (self.a0*px - py*(np.sqrt(px**2 + py**2 - self.a0**2))) # case positive sqrt
+        c0_1 = (self.a0*px + py*(np.sqrt(px**2 + py**2 - self.a0**2)))  # case negative sqrt
 
-        s0 = (a0*py + px*(np.sqrt(px**2 + py**2 - a0**2))) # case pos sqrt
-        s0_1 = (a0*py - px*(np.sqrt(px**2 + py**2 - a0**2)))  # case neg sqrt
+        s0 = (self.a0*py + px*(np.sqrt(px**2 + py**2 - self.a0**2))) # case pos sqrt
+        s0_1 = (self.a0*py - px*(np.sqrt(px**2 + py**2 - self.a0**2)))  # case neg sqrt
 
     
         th0_1 = np.arctan2(s0, c0)
@@ -62,11 +65,10 @@ class InverseKinematics():
         return [th0_1, th0_2]
 
     
-def calc_joint_angles(position,left=True):
-    if left == True:
-        ik = InverseKinematics(a0,a2,a3)
-    else:
-        ik = InverseKinematics(-a0,a2,a3)
+def calc_joint_angles(position,isLeft=True):
+    a0 = 8.38
+    ik = InverseKinematics(-a0,a2,a3) if isLeft == True else InverseKinematics(a0,a2,a3) 
+    
     # calculate all theta3s (calf):
     th3s = th3_0, th3_1 = ik.calc_theta3(*position)
     
@@ -97,5 +99,5 @@ def calc_joint_angles(position,left=True):
         if th0_min <= ts[0] <= th0_max and th2_min <= ts[1] <= th2_max and th3_min <= ts[2] <= th3_max:        
             fitting_ths.append(ts)
             
-    print(f"Correct solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
+    #print(f"Correct solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
     return fitting_ths

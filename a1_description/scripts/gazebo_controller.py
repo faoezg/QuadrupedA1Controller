@@ -24,8 +24,8 @@ th2_max = -0.92
 th2_min = -2.69
 max_eff = 55
 
-leg_offset_y = 0.1805*10
-leg_offset_x = 0.047*10
+leg_offset_y = 0.1805*100
+leg_offset_x = 0.047*100
 
 joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
                 "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
@@ -86,28 +86,31 @@ def calc_joint_difference(prev_ths, cur_ths):  # computes a cumulative absolute 
 def global_foot_pos(id, position):  # calculates the foot position in reference to the base link of the quadruped
 
     if id == 0:  # FL
-        # + offset_y; + offset x
-        position[0] += leg_offset_x
-        position[2] += leg_offset_y
+        position[0] -= leg_offset_x
+        position[2] -= leg_offset_y
     
     elif id == 1:  # FR
-        # + offset_y; - offset x
-        position[0] -= leg_offset_x
-        position[2] += leg_offset_y
-    
-    elif id == 2:  # RL
-        # - offset_y; + offset x
         position[0] += leg_offset_x
         position[2] -= leg_offset_y
     
-    elif id == 3:  # RR
-        # - offset_y; - offset x
+    elif id == 2:  # RL
         position[0] -= leg_offset_x
-        position[2] -= leg_offset_y
+        position[2] += leg_offset_y
+    
+    elif id == 3:  # RR
+        position[0] += leg_offset_x
+        position[2] += leg_offset_y
 
     return position
     
-        
+def rotate_around_origin(x,z,alpha):
+    rotation_matix = np.matrix([[np.cos(alpha), -np.sin(alpha)],
+                                [np.sin(alpha), np.cos(alpha)]])
+    vector = rotation_matix @ np.matrix([[x],[z]])
+    x_new = vector.item(0)
+    z_new = vector.item(1)
+    return x_new, z_new  
+  
 class EffortPublisher:
     def __init__(self):
         rospy.init_node('effort_publisher', anonymous=True)
@@ -136,8 +139,8 @@ class EffortPublisher:
         
         self.base_height = 20
         self.length_offset = 0
-        self.base_width = 8.38
-        self.base_width_r = 8.38        
+        self.base_width = -8.38
+        self.base_width_r = 8.38       
         
     def publish_efforts(self):
         tp = Trajectory_Planner()
@@ -145,6 +148,7 @@ class EffortPublisher:
         t = 0
         while not rospy.is_shutdown():
             downscaler = 300
+            
             if 0<=t<50: # test length shift
                 self.length_offset -= 100/(4*downscaler)
             elif 50<=t<150:
@@ -153,28 +157,33 @@ class EffortPublisher:
                 self.length_offset -= 100/(4*downscaler)
             
             if 200<=t<250: # test squat
-                self.base_height -= 50/downscaler
+                #self.base_height -= 50/downscaler
+                alpha += 0.00174533
             elif 250<=t<350:
-                self.base_height += 50/downscaler  
+                #self.base_height += 50/downscaler
+                alpha -= 0.00174533  
             elif 350<=t<400:
-                self.base_height -= 50/downscaler
+                alpha += 0.00174533
+                #self.base_height -= 50/downscaler
                 
             if 400<=t<450: # test width shift
-                self.base_width -= 50/downscaler
+                self.base_width += 50/downscaler
                 self.base_width_r += 50/downscaler
 
             elif 450<=t<550:
-                self.base_width += 50/downscaler  
+                self.base_width -= 50/downscaler  
                 self.base_width_r -= 50/downscaler  
             elif 550<=t<600:
-                self.base_width -= 50/downscaler        
+                self.base_width += 50/downscaler        
                 self.base_width_r += 50/downscaler  
             
+            
+            
             current_FL = [self.positions[1], self.positions[2],self.positions[0]]
-            ths_FL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_FL, isLeft = True)
+            ths_FL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_FL, True)
             
             current_FR = [self.positions[4], self.positions[5],self.positions[3]]
-            ths_FR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_FR, isLeft = False)
+            ths_FR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_FR, False)
             
             current_RL = [self.positions[7], self.positions[8],self.positions[6]]
             ths_RL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_RL, isLeft = True)
@@ -183,14 +192,22 @@ class EffortPublisher:
             ths_RR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_RR, isLeft = False)
             
             
+            self.goal_pos = [ths_FL[2], ths_FL[0], ths_FL[1] + np.pi/2, ths_FR[2], ths_FR[0], ths_FR[1] + np.pi/2, 
+                             ths_RL[2], ths_RL[0], ths_RL[1] + np.pi/2, ths_RR[2], ths_RR[0], ths_RR[1] + np.pi/2]
+                             
+            #print("Pos FL: ", A1_kinematics.get_pw(ths_FL[0], ths_FL[1], ths_FL[2], True))
+            #print("Pos FR: ", A1_kinematics.get_pw(ths_FR[0], ths_FR[1], ths_FR[2], False))
             
-            self.goal_pos = [ths_FL[2], -ths_FL[0], ths_FL[1] + np.pi/2, ths_FR[2], ths_FR[0], ths_FR[1] + np.pi/2,
-                             ths_RL[2], -ths_RL[0], ths_RL[1] + np.pi/2, ths_RR[2], ths_RR[0], ths_RR[1] + np.pi/2]
+            leg_positions = [A1_kinematics.get_pw(ths_FL[0], ths_FL[1], ths_FL[2], True), A1_kinematics.get_pw(ths_FR[0], ths_FR[1], ths_FR[2], False),
+                             A1_kinematics.get_pw(ths_FL[0], ths_FL[1], ths_FL[2], True), A1_kinematics.get_pw(ths_FR[0], ths_FR[1], ths_FR[2], False)] 
             
-            print(self.goal_pos)
+            # calculate global position of each foot:
+            for idx, position in enumerate(leg_positions):
+                print(idx, global_foot_pos(idx, position))
+                
+            
             
             efforts = self.calculate_joint_effort()            
-            
             for i, eff in enumerate(efforts):
                 if(np.abs(eff) > max_eff): 
                     eff = np.sign(eff) * max_eff
@@ -241,7 +258,7 @@ if __name__ == '__main__':
     plt.title('Trajectory')
     plt.grid(True)
     plt.show()"""
-    
+    #print(rotate_around_origin(1,2,np.pi/2))
     try:
         effort_publisher = EffortPublisher()
         effort_publisher.publish_efforts()
