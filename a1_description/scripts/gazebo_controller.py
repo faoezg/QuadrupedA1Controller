@@ -24,6 +24,9 @@ th2_max = -0.92
 th2_min = -2.69
 max_eff = 55
 
+leg_offset_y = 0.1805*10
+leg_offset_x = 0.047*10
+
 joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
                 "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
                 "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
@@ -50,8 +53,60 @@ class Trajectory_Planner:
         print(y,z)
         x = 8.38      
         return x,y,z
-        
+    
+def calc_correct_thetas(position, prev_ths, isLeft):
+    possible_joint_angles = A1_kinematics.calc_joint_angles(position, isLeft)
 
+    if len(possible_joint_angles) == 0:
+        print("no possible angles could be found for this Positon. Stop")
+        return prev_ths                  
+
+    min_val = calc_joint_difference(prev_ths,possible_joint_angles[0])
+    min_at = 0
+    
+    for i in range(1, len(possible_joint_angles)):
+        difference = calc_joint_difference(prev_ths,possible_joint_angles[i])
+        if(difference < min_val):
+            min_val = difference
+            min_at = i
+
+    return possible_joint_angles[min_at]
+    
+
+def calc_joint_difference(prev_ths, cur_ths):  # computes a cumulative absolute difference between joint configs
+    diff_th0 = np.abs(prev_ths[0] - cur_ths[0])
+
+    diff_th2 = np.abs(prev_ths[1] - cur_ths[1])
+
+    diff_th3 = np.abs(prev_ths[2] - cur_ths[2])
+
+    return diff_th0 + diff_th2 + diff_th3
+
+    
+def global_foot_pos(id, position):  # calculates the foot position in reference to the base link of the quadruped
+
+    if id == 0:  # FL
+        # + offset_y; + offset x
+        position[0] += leg_offset_x
+        position[2] += leg_offset_y
+    
+    elif id == 1:  # FR
+        # + offset_y; - offset x
+        position[0] -= leg_offset_x
+        position[2] += leg_offset_y
+    
+    elif id == 2:  # RL
+        # - offset_y; + offset x
+        position[0] += leg_offset_x
+        position[2] -= leg_offset_y
+    
+    elif id == 3:  # RR
+        # - offset_y; - offset x
+        position[0] -= leg_offset_x
+        position[2] -= leg_offset_y
+
+    return position
+    
         
 class EffortPublisher:
     def __init__(self):
@@ -115,20 +170,24 @@ class EffortPublisher:
                 self.base_width -= 50/downscaler        
                 self.base_width_r += 50/downscaler  
             
-            angles_l = A1_kinematics.calc_joint_angles([self.base_width, self.base_height, self.length_offset])
-            angles_r = A1_kinematics.calc_joint_angles([self.base_width_r, self.base_height, self.length_offset], False)
-
-            th0_l = angles_l[0][0]
-            th2_l = angles_l[0][1]
-            th3_l = angles_l[0][2]
+            current_FL = [self.positions[1], self.positions[2],self.positions[0]]
+            ths_FL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_FL, isLeft = True)
             
-            th0_r = angles_r[0][0]
-            th2_r = angles_r[0][1]
-            th3_r = angles_r[0][2]
+            current_FR = [self.positions[4], self.positions[5],self.positions[3]]
+            ths_FR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_FR, isLeft = False)
+            
+            current_RL = [self.positions[7], self.positions[8],self.positions[6]]
+            ths_RL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_RL, isLeft = True)
+            
+            current_RR = [self.positions[10], self.positions[11],self.positions[9]]
+            ths_RR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_RR, isLeft = False)
             
             
-            self.goal_pos = [th3_l, -th0_l, th2_l + np.pi/2, th3_r, th0_r, th2_r + np.pi/2,
-                             th3_l, -th0_l, th2_l + np.pi/2, th3_r, th0_r, th2_r + np.pi/2]
+            
+            self.goal_pos = [ths_FL[2], -ths_FL[0], ths_FL[1] + np.pi/2, ths_FR[2], ths_FR[0], ths_FR[1] + np.pi/2,
+                             ths_RL[2], -ths_RL[0], ths_RL[1] + np.pi/2, ths_RR[2], ths_RR[0], ths_RR[1] + np.pi/2]
+            
+            print(self.goal_pos)
             
             efforts = self.calculate_joint_effort()            
             

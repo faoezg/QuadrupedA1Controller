@@ -84,12 +84,18 @@ def calc_joint_angles(position,left=True):
     
     sol3 = [th0s[0], th2s[2], th3s[1]]
     sol4 = [th0s[1], th2s[3], th3s[1]]    
-        
+    
+    
+    if th0s[0] >= np.pi - 0.1:
+        th0s[0] = th0s[0] - np.pi
+    if th0s[1] >= np.pi - 0.1:
+        th0s[1] = th0s[1] - np.pi
     
     solutions = [sol1, sol2, sol3,sol4]
     fitting_ths = [] 
     for ts in solutions:  # check whether our ths fit within our joint constraints
         if th0_min <= ts[0] <= th0_max and th2_min <= ts[1] <= th2_max and th3_min <= ts[2] <= th3_max:        
             fitting_ths.append(ts)
-    # print(f"Corrent solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
+            
+    print(f"Correct solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
     return fitting_ths
