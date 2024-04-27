@@ -102,14 +102,33 @@ def global_foot_pos(id, position):  # calculates the foot position in reference 
         position[2] += leg_offset_y
 
     return position
+
+def local_foot_pos(id, position):  # does the inverse to the above function
+    if id == 0:  # FL
+        position[0] += leg_offset_x
+        position[2] += leg_offset_y
     
-def rotate_around_origin(x,z,alpha):
+    elif id == 1:  # FR
+        position[0] -= leg_offset_x
+        position[2] += leg_offset_y
+    
+    elif id == 2:  # RL
+        position[0] += leg_offset_x
+        position[2] -= leg_offset_y
+    
+    elif id == 3:  # RR
+        position[0] -= leg_offset_x
+        position[2] -= leg_offset_y
+
+    return position
+    
+def rotate_around_origin(x,y,z,alpha):
     rotation_matix = np.matrix([[np.cos(alpha), -np.sin(alpha)],
                                 [np.sin(alpha), np.cos(alpha)]])
     vector = rotation_matix @ np.matrix([[x],[z]])
     x_new = vector.item(0)
     z_new = vector.item(1)
-    return x_new, z_new  
+    return [x_new, y, z_new]  
   
 class EffortPublisher:
     def __init__(self):
@@ -126,10 +145,6 @@ class EffortPublisher:
         self.velocities = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
                             
-        #self.ik = A1_kinematics.InverseKinematics()
-        
-        #pos_thetas = A1_kinematics.calc_joint_angles(pos_fr)
-        #thetas = pos_thetas[0]
 
         self.goal_pos = np.array([-1.5708,0,0.785398,-1.5708,0,0.785398,
                                  -1.5708,0,0.785398,-1.5708,0,0.785398])
@@ -137,75 +152,119 @@ class EffortPublisher:
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
         
-        self.base_height = 20
-        self.length_offset = 0
-        self.base_width = -8.38
-        self.base_width_r = 8.38       
+        self.hip_to_toe_pos = [[-8.38, 20, 0],  # FL
+                               [8.38, 20, 0],  # FR
+                               [-8.38, 20, 0],  # RL
+                               [8.38, 20, 0]]  # RR
+
+        self.global_positions = [[0,0,0],
+                                 [0,0,0],
+                                 [0,0,0],
+                                 [0,0,0]]
         
     def publish_efforts(self):
         tp = Trajectory_Planner()
-        
+        self.alpha = 0
+
         t = 0
         while not rospy.is_shutdown():
             downscaler = 300
             
-            if 0<=t<50: # test length shift
-                self.length_offset -= 100/(4*downscaler)
-            elif 50<=t<150:
-                self.length_offset += 100/(4*downscaler)
-            elif 150<=t<200:
-                self.length_offset -= 100/(4*downscaler)
             
-            if 200<=t<250: # test squat
-                #self.base_height -= 50/downscaler
-                alpha += 0.00174533
+            if 0<=t<50: # test length shift                
+                self.hip_to_toe_pos[0][2] -= 100/(4*downscaler)
+                self.hip_to_toe_pos[1][2] -= 100/(4*downscaler)
+                self.hip_to_toe_pos[2][2] -= 100/(4*downscaler)
+                self.hip_to_toe_pos[3][2] -= 100/(4*downscaler)
+                
+            elif 50<=t<150:                
+                self.hip_to_toe_pos[0][2] += 100/(4*downscaler)
+                self.hip_to_toe_pos[1][2] += 100/(4*downscaler)
+                self.hip_to_toe_pos[2][2] += 100/(4*downscaler)
+                self.hip_to_toe_pos[3][2] += 100/(4*downscaler)
+                
+            elif 150<=t<200:
+                self.hip_to_toe_pos[0][2] -= 100/(4*downscaler)
+                self.hip_to_toe_pos[1][2] -= 100/(4*downscaler)
+                self.hip_to_toe_pos[2][2] -= 100/(4*downscaler)
+                self.hip_to_toe_pos[3][2] -= 100/(4*downscaler)
+        
+               
+                            
+            if 200<=t<250: # test squat / height shift / yaw movement
+                self.hip_to_toe_pos[0][1] -= 50/downscaler
+                self.hip_to_toe_pos[1][1] -= 50/downscaler
+                self.hip_to_toe_pos[2][1] -= 50/downscaler
+                self.hip_to_toe_pos[3][1] -= 50/downscaler
+                self.alpha += 0.00174533/10
             elif 250<=t<350:
-                #self.base_height += 50/downscaler
-                alpha -= 0.00174533  
+                self.hip_to_toe_pos[0][1] += 50/downscaler
+                self.hip_to_toe_pos[1][1] += 50/downscaler
+                self.hip_to_toe_pos[2][1] += 50/downscaler
+                self.hip_to_toe_pos[3][1] += 50/downscaler
+                self.alpha -= 0.00174533/10
             elif 350<=t<400:
-                alpha += 0.00174533
-                #self.base_height -= 50/downscaler
+                self.alpha += 0.00174533/10
+                self.hip_to_toe_pos[0][1] -= 50/downscaler
+                self.hip_to_toe_pos[1][1] -= 50/downscaler
+                self.hip_to_toe_pos[2][1] -= 50/downscaler
+                self.hip_to_toe_pos[3][1] -= 50/downscaler
+                
+                
                 
             if 400<=t<450: # test width shift
-                self.base_width += 50/downscaler
-                self.base_width_r += 50/downscaler
+                self.hip_to_toe_pos[0][0] += 50/downscaler
+                self.hip_to_toe_pos[1][0] += 50/downscaler
+                self.hip_to_toe_pos[2][0] += 50/downscaler
+                self.hip_to_toe_pos[3][0] += 50/downscaler
 
             elif 450<=t<550:
-                self.base_width -= 50/downscaler  
-                self.base_width_r -= 50/downscaler  
+                self.hip_to_toe_pos[0][0] -= 50/downscaler
+                self.hip_to_toe_pos[1][0] -= 50/downscaler
+                self.hip_to_toe_pos[2][0] -= 50/downscaler
+                self.hip_to_toe_pos[3][0] -= 50/downscaler
             elif 550<=t<600:
-                self.base_width += 50/downscaler        
-                self.base_width_r += 50/downscaler  
+                
+                self.hip_to_toe_pos[0][0] += 50/downscaler
+                self.hip_to_toe_pos[1][0] += 50/downscaler
+                self.hip_to_toe_pos[2][0] += 50/downscaler
+                self.hip_to_toe_pos[3][0] += 50/downscaler
             
             
-            
+            # calculate global positions based on current hip_to_toe_position
+            self.global_positions[0] = global_foot_pos(0,self.hip_to_toe_pos[0])
+            self.global_positions[1] = global_foot_pos(1,self.hip_to_toe_pos[1])
+            self.global_positions[2] = global_foot_pos(2,self.hip_to_toe_pos[2])
+            self.global_positions[3] = global_foot_pos(3,self.hip_to_toe_pos[3])
+
+            # rotate positions
+            self.global_positions[0] = rotate_around_origin(self.global_positions[0][0],self.global_positions[0][1],self.global_positions[0][2], self.alpha)
+            self.global_positions[1] = rotate_around_origin(self.global_positions[1][0],self.global_positions[1][1],self.global_positions[1][2], self.alpha)
+            self.global_positions[2] = rotate_around_origin(self.global_positions[2][0],self.global_positions[2][1],self.global_positions[2][2], self.alpha)
+            self.global_positions[3] = rotate_around_origin(self.global_positions[3][0],self.global_positions[3][1],self.global_positions[3][2], self.alpha)
+
+            # calculate new hip to toe positions
+            self.hip_to_toe_pos[0] = local_foot_pos(0,self.global_positions[0])
+            self.hip_to_toe_pos[1] = local_foot_pos(1,self.global_positions[1])
+            self.hip_to_toe_pos[2] = local_foot_pos(2,self.global_positions[2])
+            self.hip_to_toe_pos[3] = local_foot_pos(3,self.global_positions[3])
+             
             current_FL = [self.positions[1], self.positions[2],self.positions[0]]
-            ths_FL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_FL, True)
+            ths_FL = calc_correct_thetas([self.hip_to_toe_pos[0][0], self.hip_to_toe_pos[0][1], self.hip_to_toe_pos[0][2]], current_FL, True)
             
             current_FR = [self.positions[4], self.positions[5],self.positions[3]]
-            ths_FR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_FR, False)
+            ths_FR = calc_correct_thetas([self.hip_to_toe_pos[1][0], self.hip_to_toe_pos[1][1], self.hip_to_toe_pos[1][2]], current_FR, False)
             
             current_RL = [self.positions[7], self.positions[8],self.positions[6]]
-            ths_RL = calc_correct_thetas([self.base_width, self.base_height, self.length_offset], current_RL, isLeft = True)
+            ths_RL = calc_correct_thetas([self.hip_to_toe_pos[2][0], self.hip_to_toe_pos[2][1], self.hip_to_toe_pos[2][2]], current_RL, isLeft = True)
             
             current_RR = [self.positions[10], self.positions[11],self.positions[9]]
-            ths_RR = calc_correct_thetas([self.base_width_r, self.base_height, self.length_offset], current_RR, isLeft = False)
+            ths_RR = calc_correct_thetas([self.hip_to_toe_pos[3][0], self.hip_to_toe_pos[3][1], self.hip_to_toe_pos[3][2]], current_RR, isLeft = False)
             
             
             self.goal_pos = [ths_FL[2], ths_FL[0], ths_FL[1] + np.pi/2, ths_FR[2], ths_FR[0], ths_FR[1] + np.pi/2, 
                              ths_RL[2], ths_RL[0], ths_RL[1] + np.pi/2, ths_RR[2], ths_RR[0], ths_RR[1] + np.pi/2]
-                             
-            #print("Pos FL: ", A1_kinematics.get_pw(ths_FL[0], ths_FL[1], ths_FL[2], True))
-            #print("Pos FR: ", A1_kinematics.get_pw(ths_FR[0], ths_FR[1], ths_FR[2], False))
-            
-            leg_positions = [A1_kinematics.get_pw(ths_FL[0], ths_FL[1], ths_FL[2], True), A1_kinematics.get_pw(ths_FR[0], ths_FR[1], ths_FR[2], False),
-                             A1_kinematics.get_pw(ths_FL[0], ths_FL[1], ths_FL[2], True), A1_kinematics.get_pw(ths_FR[0], ths_FR[1], ths_FR[2], False)] 
-            
-            # calculate global position of each foot:
-            for idx, position in enumerate(leg_positions):
-                print(idx, global_foot_pos(idx, position))
-                
-            
+                            
             
             efforts = self.calculate_joint_effort()            
             for i, eff in enumerate(efforts):
@@ -230,6 +289,7 @@ class EffortPublisher:
         control_effort = np.add(Kp * position_error,Kd * velocity_error)
         return control_effort
     
+
 
 if __name__ == '__main__':
     """step_height = 0.1
@@ -258,7 +318,6 @@ if __name__ == '__main__':
     plt.title('Trajectory')
     plt.grid(True)
     plt.show()"""
-    #print(rotate_around_origin(1,2,np.pi/2))
     try:
         effort_publisher = EffortPublisher()
         effort_publisher.publish_efforts()
