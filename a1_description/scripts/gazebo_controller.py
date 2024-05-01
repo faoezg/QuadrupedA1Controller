@@ -3,8 +3,8 @@
 import rospy
 from gazebo_msgs.srv import ApplyJointEffort
 from sensor_msgs.msg import JointState
+from unitree_legged_msgs.msg import MotorCmd
 import numpy as np
-from matplotlib import pyplot as plt
 import A1_kinematics
 
 l1 = l2 = 0.20
@@ -32,8 +32,22 @@ joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
                 "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
                 "RR_calf_joint","RR_hip_joint","RR_thigh_joint"]
 
+command_topics = ["/a1_gazebo/FL_calf_joint/command",
+                  "/a1_gazebo/FL_hip_joint/command",
+                  "/a1_gazebo/FL_thigh_joint/command",
+                  "/a1_gazebo/FR_calf_joint/command",
+                  "/a1_gazebo/FR_hip_joint/command",
+                  "/a1_gazebo/FR_thigh_joint/command",
+                  "/a1_gazebo/RL_calf_joint/command",
+                  "/a1_gazebo/RL_hip_joint/command",
+                  "/a1_gazebo/RL_thigh_joint/command",
+                  "/a1_gazebo/RR_calf_joint/command",
+                  "/a1_gazebo/RR_hip_joint/command",
+                  "/a1_gazebo/RR_thigh_joint/command"]
 
-
+# TODO: in control loop adding publishers to the above topics
+# Note: mode = 10, and tau = calculated effort
+                  
 class Trajectory_Planner:
     def __init__(self) -> None:
         self.Rh = 30
@@ -281,7 +295,7 @@ class EffortPublisher:
                 self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
 
             t+=1
-            if t==599:
+            if t % 600 == 0:
                 self.xyz_mode = not self.xyz_mode
 
             t %= 600
