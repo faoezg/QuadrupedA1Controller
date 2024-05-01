@@ -161,8 +161,8 @@ class EffortPublisher:
                           0,0,0,0,0,0])
                             
 
-        self.goal_pos = np.array([-1.5708,0,0.785398,-1.5708,0,0.785398,
-                                 -1.5708,0,0.785398,-1.5708,0,0.785398])
+        self.goal_pos = np.array([-1.5708, 0, 0.785398, -1.5708, 0, 0.785398,
+                                 -1.5708, 0, 0.785398, -1.5708, 0, 0.785398])
         
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
@@ -181,83 +181,60 @@ class EffortPublisher:
                                  [0,0,0],
                                  [0,0,0]]
         
+        
     def publish_efforts(self):
-        tp = Trajectory_Planner()
-        
-        
         t = 0
         while not rospy.is_shutdown():
             downscaler = 300
             
-            
             if 0<=t<50: # test length shift / pitch rotation       
-                self.pitch += 0.00174533/10         
-                """self.hip_to_toe_pos[0][2] -= 100/(4*downscaler)
-                self.hip_to_toe_pos[1][2] -= 100/(4*downscaler)
-                self.hip_to_toe_pos[2][2] -= 100/(4*downscaler)
-                self.hip_to_toe_pos[3][2] -= 100/(4*downscaler)"""
+                #self.pitch += 0.00174533/10         
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][2] += 50/downscaler 
                 
             elif 50<=t<150:
-                self.pitch -= 0.00174533/10                         
-                """self.hip_to_toe_pos[0][2] += 100/(4*downscaler)
-                self.hip_to_toe_pos[1][2] += 100/(4*downscaler)
-                self.hip_to_toe_pos[2][2] += 100/(4*downscaler)
-                self.hip_to_toe_pos[3][2] += 100/(4*downscaler)
-                """
+                #self.pitch -= 0.00174533/10                         
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][2] -= 50/downscaler 
+                
             elif 150<=t<200:
-                self.pitch += 0.00174533/10         
-                """self.hip_to_toe_pos[0][2] -= 100/(4*downscaler)
-                self.hip_to_toe_pos[1][2] -= 100/(4*downscaler)
-                self.hip_to_toe_pos[2][2] -= 100/(4*downscaler)
-                self.hip_to_toe_pos[3][2] -= 100/(4*downscaler)
-                """
-               
+                #self.pitch += 0.00174533/10         
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][2] += 50/downscaler 
+                
                             
             if 200<=t<250: # test squat / height shift / yaw movement
-                self.yaw += 0.00174533/10
-                """self.hip_to_toe_pos[0][1] -= 50/downscaler
-                self.hip_to_toe_pos[1][1] -= 50/downscaler
-                self.hip_to_toe_pos[2][1] -= 50/downscaler
-                self.hip_to_toe_pos[3][1] -= 50/downscaler"""
+                #self.yaw += 0.00174533/10
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][1] += 50/downscaler 
+                   
             elif 250<=t<350:
-                self.yaw -= 0.00174533/10
-                """self.hip_to_toe_pos[0][1] += 50/downscaler
-                self.hip_to_toe_pos[1][1] += 50/downscaler
-                self.hip_to_toe_pos[2][1] += 50/downscaler
-                self.hip_to_toe_pos[3][1] += 50/downscaler"""
-            elif 350<=t<400:
-                self.yaw += 0.00174533/10
-                """self.hip_to_toe_pos[0][1] -= 50/downscaler
-                self.hip_to_toe_pos[1][1] -= 50/downscaler
-                self.hip_to_toe_pos[2][1] -= 50/downscaler
-                self.hip_to_toe_pos[3][1] -= 50/downscaler"""
+                #self.yaw -= 0.00174533/10
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][1] -= 50/downscaler 
                 
+            elif 350<=t<400:
+                #self.yaw += 0.00174533/10
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][1] += 50/downscaler 
                 
                 
             if 400<=t<450: # test width shift / roll movement
-                self.roll += 0.00174533/8.8               
-                """self.hip_to_toe_pos[0][0] += 50/downscaler
-                self.hip_to_toe_pos[1][0] += 50/downscaler
-                self.hip_to_toe_pos[2][0] += 50/downscaler
-                self.hip_to_toe_pos[3][0] += 50/downscaler"""
+                #self.roll += 0.00174533/8.8               
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][0] += 50/downscaler        
+                   
             elif 450<=t<550:
-                self.roll -= 0.00174533/8.8
-                """self.hip_to_toe_pos[0][0] -= 50/downscaler
-                self.hip_to_toe_pos[1][0] -= 50/downscaler
-                self.hip_to_toe_pos[2][0] -= 50/downscaler
-                self.hip_to_toe_pos[3][0] -= 50/downscaler"""
+                #self.roll -= 0.00174533/8.8
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][0] -= 50/downscaler   
+            
             elif 550<=t<600:
-                self.roll += 0.00174533/8.8
-                """self.hip_to_toe_pos[0][0] += 50/downscaler
-                self.hip_to_toe_pos[1][0] += 50/downscaler
-                self.hip_to_toe_pos[2][0] += 50/downscaler
-                self.hip_to_toe_pos[3][0] += 50/downscaler"""
-            
-            current_FL = [self.positions[1], self.positions[2],self.positions[0]]
-            current_FR = [self.positions[4], self.positions[5],self.positions[3]]
-            current_RL = [self.positions[7], self.positions[8],self.positions[6]]
-            current_RR = [self.positions[10], self.positions[11],self.positions[9]]
-            
+                #self.roll += 0.00174533/8.8
+                for i in range(0,4):
+                   self.hip_to_toe_pos[i][0] += 50/downscaler 
+                
+   
             for legIdx in range(0,4):
                 # calculate global positions (base to foot)
                 self.global_positions[legIdx] = global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
@@ -269,19 +246,17 @@ class EffortPublisher:
                 # set new local position (hip to foot)
                 self.hip_to_toe_pos[legIdx] = local_foot_pos(legIdx,self.global_positions[legIdx])
                 
-             
-            ths_FL = calc_correct_thetas([self.hip_to_toe_pos[0][0], self.hip_to_toe_pos[0][1], self.hip_to_toe_pos[0][2]], current_FL, True)
-            
-            ths_FR = calc_correct_thetas([self.hip_to_toe_pos[1][0], self.hip_to_toe_pos[1][1], self.hip_to_toe_pos[1][2]], current_FR, False)
-            
-            ths_RL = calc_correct_thetas([self.hip_to_toe_pos[2][0], self.hip_to_toe_pos[2][1], self.hip_to_toe_pos[2][2]], current_RL, isLeft = True)
-            
-            ths_RR = calc_correct_thetas([self.hip_to_toe_pos[3][0], self.hip_to_toe_pos[3][1], self.hip_to_toe_pos[3][2]], current_RR, isLeft = False)
-            
-            
-            self.goal_pos = [ths_FL[2], ths_FL[0], ths_FL[1] + np.pi/2, ths_FR[2], ths_FR[0], ths_FR[1] + np.pi/2, 
-                             ths_RL[2], ths_RL[0], ths_RL[1] + np.pi/2, ths_RR[2], ths_RR[0], ths_RR[1] + np.pi/2]
-                            
+                # get current leg angles from robot
+                current_ths = [self.positions[legIdx*3 + 1], self.positions[legIdx*3 + 2], self.positions[legIdx*3]]
+                
+                # calculate closest solution for next position
+                goal_ths  = calc_correct_thetas([self.hip_to_toe_pos[legIdx][0], self.hip_to_toe_pos[legIdx][1], self.hip_to_toe_pos[legIdx][2]],
+                                                current_ths, legIdx % 2 == 0)
+                
+                # set goal angles for corresponding leg
+                self.goal_pos[legIdx*3] = goal_ths[2]
+                self.goal_pos[legIdx*3 + 1] = goal_ths[0]
+                self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2     
             
             efforts = self.calculate_joint_effort()            
             for i, eff in enumerate(efforts):
@@ -309,32 +284,7 @@ class EffortPublisher:
 
 
 if __name__ == '__main__':
-    """step_height = 0.1
-    step_length = 0.1
-    tgp = 100
-    
 
-    # Initialize the trajectory planner
-    planner = Trajectory_Planner()
-
-    # Create an array of time values
-    t_values = np.linspace(0, tgp, 1000)
-
-    #   Calculate x and z values for each time value
-    x_values = []
-    z_values = []
-    for t in t_values:
-        x, z = planner.step_trajectory(step_height, step_length, tgp, t)
-        x_values.append(x)
-        z_values.append(z)
-
-    # Plot the trajectory
-    plt.plot(x_values, z_values)
-    plt.xlabel('x')
-    plt.ylabel('z')
-    plt.title('Trajectory')
-    plt.grid(True)
-    plt.show()"""
     try:
         effort_publisher = EffortPublisher()
         effort_publisher.publish_efforts()
