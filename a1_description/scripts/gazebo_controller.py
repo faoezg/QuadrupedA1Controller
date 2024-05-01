@@ -122,24 +122,27 @@ def local_foot_pos(id, position):  # does the inverse to the above function
 
     return position
     
-def rotate_around_origin(x,y,z,alpha):
-    rotation_matix = np.matrix([[np.cos(alpha), -np.sin(alpha)],
-                                [np.sin(alpha), np.cos(alpha)]])
-    vector = rotation_matix @ np.matrix([[x],[z]])
+def apply_rpy(x,y,z,roll,pitch,yaw):
+    """Function to rotate global positions according to desired base-rpy"""
+    
+    rotate_y = np.matrix([[np.cos(yaw), 0, np.sin(yaw)],
+                          [0, 1, 0],
+                          [-np.sin(yaw), 0, np.cos(yaw)]])
+ 
+    rotate_x = np.matrix([[1, 0, 0],
+                          [0, np.cos(pitch), -np.sin(pitch)],
+                          [0, np.sin(pitch), np.cos(pitch)]])    
+    
+    rotate_z = np.matrix([[np.cos(roll), -np.sin(roll), 0],
+                          [np.sin(roll), np.cos(roll), 0],
+                          [0, 0, 1]])
+    
+    vector = rotate_z @ rotate_x @ rotate_y @ np.matrix([[x],[y],[z]])
+    
     x_new = vector.item(0)
-    z_new = vector.item(1)
-    return [x_new, y, z_new]  
-  
-def rotate_pitch(x,y,z,beta):
-    rotation_matix = np.matrix([[np.cos(beta), -np.sin(beta)],
-                                [np.sin(beta), np.cos(beta)]])
-    vector = rotation_matix @ np.matrix([[z],[y]])
-    z_new = vector.item(0)
     y_new = vector.item(1)
-    return [x, y_new, z_new]  
-
-def rotate_roll(x,y,z,gamma):
-    return
+    z_new = vector.item(2)
+    return [x_new, y_new, z_new]
     
     
 class EffortPublisher:
@@ -169,6 +172,10 @@ class EffortPublisher:
                                [-8.38, 22.5, 0],  # RL
                                [8.38, 22.5, 0]]  # RR
 
+        self.yaw = 0  # yaw rotation of body
+        self.pitch = 0  # pitch rotation 
+        self.roll = 0 # roll rotation
+        
         self.global_positions = [[0,0,0],
                                  [0,0,0],
                                  [0,0,0],
@@ -176,30 +183,29 @@ class EffortPublisher:
         
     def publish_efforts(self):
         tp = Trajectory_Planner()
-        self.alpha = 0  # yaw rotation of body
-        self.beta = 0  # pitch rotation 
-        self.gamme = 0 # roll rotation
+        
+        
         t = 0
         while not rospy.is_shutdown():
             downscaler = 300
             
             
             if 0<=t<50: # test length shift / pitch rotation       
-                self.beta += 0.00174533/10         
+                self.pitch += 0.00174533/10         
                 """self.hip_to_toe_pos[0][2] -= 100/(4*downscaler)
                 self.hip_to_toe_pos[1][2] -= 100/(4*downscaler)
                 self.hip_to_toe_pos[2][2] -= 100/(4*downscaler)
                 self.hip_to_toe_pos[3][2] -= 100/(4*downscaler)"""
                 
             elif 50<=t<150:
-                self.beta -= 0.00174533/10                         
+                self.pitch -= 0.00174533/10                         
                 """self.hip_to_toe_pos[0][2] += 100/(4*downscaler)
                 self.hip_to_toe_pos[1][2] += 100/(4*downscaler)
                 self.hip_to_toe_pos[2][2] += 100/(4*downscaler)
                 self.hip_to_toe_pos[3][2] += 100/(4*downscaler)
                 """
             elif 150<=t<200:
-                self.beta += 0.00174533/10         
+                self.pitch += 0.00174533/10         
                 """self.hip_to_toe_pos[0][2] -= 100/(4*downscaler)
                 self.hip_to_toe_pos[1][2] -= 100/(4*downscaler)
                 self.hip_to_toe_pos[2][2] -= 100/(4*downscaler)
@@ -208,19 +214,19 @@ class EffortPublisher:
                
                             
             if 200<=t<250: # test squat / height shift / yaw movement
-                self.alpha += 0.00174533/10
+                self.yaw += 0.00174533/10
                 """self.hip_to_toe_pos[0][1] -= 50/downscaler
                 self.hip_to_toe_pos[1][1] -= 50/downscaler
                 self.hip_to_toe_pos[2][1] -= 50/downscaler
                 self.hip_to_toe_pos[3][1] -= 50/downscaler"""
             elif 250<=t<350:
-                self.alpha -= 0.00174533/10
+                self.yaw -= 0.00174533/10
                 """self.hip_to_toe_pos[0][1] += 50/downscaler
                 self.hip_to_toe_pos[1][1] += 50/downscaler
                 self.hip_to_toe_pos[2][1] += 50/downscaler
                 self.hip_to_toe_pos[3][1] += 50/downscaler"""
             elif 350<=t<400:
-                self.alpha += 0.00174533/10
+                self.yaw += 0.00174533/10
                 """self.hip_to_toe_pos[0][1] -= 50/downscaler
                 self.hip_to_toe_pos[1][1] -= 50/downscaler
                 self.hip_to_toe_pos[2][1] -= 50/downscaler
@@ -228,23 +234,24 @@ class EffortPublisher:
                 
                 
                 
-            if 400<=t<450: # test width shift
-                self.hip_to_toe_pos[0][0] += 50/downscaler
+            if 400<=t<450: # test width shift / roll movement
+                self.roll += 0.00174533/8.8               
+                """self.hip_to_toe_pos[0][0] += 50/downscaler
                 self.hip_to_toe_pos[1][0] += 50/downscaler
                 self.hip_to_toe_pos[2][0] += 50/downscaler
-                self.hip_to_toe_pos[3][0] += 50/downscaler
-
+                self.hip_to_toe_pos[3][0] += 50/downscaler"""
             elif 450<=t<550:
-                self.hip_to_toe_pos[0][0] -= 50/downscaler
+                self.roll -= 0.00174533/8.8
+                """self.hip_to_toe_pos[0][0] -= 50/downscaler
                 self.hip_to_toe_pos[1][0] -= 50/downscaler
                 self.hip_to_toe_pos[2][0] -= 50/downscaler
-                self.hip_to_toe_pos[3][0] -= 50/downscaler
+                self.hip_to_toe_pos[3][0] -= 50/downscaler"""
             elif 550<=t<600:
-                
-                self.hip_to_toe_pos[0][0] += 50/downscaler
+                self.roll += 0.00174533/8.8
+                """self.hip_to_toe_pos[0][0] += 50/downscaler
                 self.hip_to_toe_pos[1][0] += 50/downscaler
                 self.hip_to_toe_pos[2][0] += 50/downscaler
-                self.hip_to_toe_pos[3][0] += 50/downscaler
+                self.hip_to_toe_pos[3][0] += 50/downscaler"""
             
             
             # calculate global positions based on current hip_to_toe_position
@@ -252,21 +259,16 @@ class EffortPublisher:
             self.global_positions[1] = global_foot_pos(1,self.hip_to_toe_pos[1])
             self.global_positions[2] = global_foot_pos(2,self.hip_to_toe_pos[2])
             self.global_positions[3] = global_foot_pos(3,self.hip_to_toe_pos[3])
-
-            # rotate positions  // yaw
-            self.global_positions[0] = rotate_around_origin(self.global_positions[0][0],self.global_positions[0][1],self.global_positions[0][2], self.alpha)
-            self.global_positions[1] = rotate_around_origin(self.global_positions[1][0],self.global_positions[1][1],self.global_positions[1][2], self.alpha)
-            self.global_positions[2] = rotate_around_origin(self.global_positions[2][0],self.global_positions[2][1],self.global_positions[2][2], self.alpha)
-            self.global_positions[3] = rotate_around_origin(self.global_positions[3][0],self.global_positions[3][1],self.global_positions[3][2], self.alpha)
-
-            # rotate positions // pitch
-            self.global_positions[0] = rotate_pitch(self.global_positions[0][0],self.global_positions[0][1],self.global_positions[0][2], self.beta)
-            self.global_positions[1] = rotate_pitch(self.global_positions[1][0],self.global_positions[1][1],self.global_positions[1][2], self.beta)
-            self.global_positions[2] = rotate_pitch(self.global_positions[2][0],self.global_positions[2][1],self.global_positions[2][2], self.beta)
-            self.global_positions[3] = rotate_pitch(self.global_positions[3][0],self.global_positions[3][1],self.global_positions[3][2], self.beta)
             
-            # rotate positions // roll
-
+            self.global_positions[0] = apply_rpy(self.global_positions[0][0], self.global_positions[0][1], self.global_positions[0][2],
+                                                 self.roll, self.pitch, self.yaw)
+            self.global_positions[1] = apply_rpy(self.global_positions[1][0], self.global_positions[1][1], self.global_positions[1][2],
+                                                 self.roll, self.pitch, self.yaw)
+            self.global_positions[2] = apply_rpy(self.global_positions[2][0], self.global_positions[2][1], self.global_positions[2][2],
+                                                 self.roll, self.pitch, self.yaw)
+            self.global_positions[3] = apply_rpy(self.global_positions[3][0], self.global_positions[3][1], self.global_positions[3][2],
+                                                 self.roll, self.pitch, self.yaw)
+            
             # calculate new hip to toe positions
             self.hip_to_toe_pos[0] = local_foot_pos(0,self.global_positions[0])
             self.hip_to_toe_pos[1] = local_foot_pos(1,self.global_positions[1])
