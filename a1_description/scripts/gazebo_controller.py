@@ -187,52 +187,68 @@ class EffortPublisher:
         while not rospy.is_shutdown():
             downscaler = 300
             
-            if 0<=t<50: # test length shift / pitch rotation       
-                #self.pitch += 0.00174533/10         
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][2] += 50/downscaler 
-                
+            xyz_mode = False
+            
+            if 0<=t<50: # test length shift / pitch rotation        
+                if xyz_mode:        
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][2] += 50/downscaler 
+                else:
+                    self.pitch += 0.00174533/10             
             elif 50<=t<150:
-                #self.pitch -= 0.00174533/10                         
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][2] -= 50/downscaler 
-                
+                if xyz_mode:        
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][2] -= 50/downscaler 
+                else:
+                    self.pitch += 0.00174533/10       
             elif 150<=t<200:
-                #self.pitch += 0.00174533/10         
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][2] += 50/downscaler 
-                
-                            
+                if xyz_mode:        
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][2] += 50/downscaler 
+                else:
+                    self.pitch += 0.00174533/10
+                    
+                             
             if 200<=t<250: # test squat / height shift / yaw movement
-                #self.yaw += 0.00174533/10
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][1] += 50/downscaler 
-                   
+                if xyz_mode:
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][1] += 50/downscaler 
+                else:
+                    self.yaw += 0.00174533/10             
             elif 250<=t<350:
-                #self.yaw -= 0.00174533/10
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][1] -= 50/downscaler 
-                
+                if xyz_mode:
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][1] -= 50/downscaler 
+                else:
+                    self.yaw += 0.00174533/10   
             elif 350<=t<400:
-                #self.yaw += 0.00174533/10
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][1] += 50/downscaler 
+                if xyz_mode:
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][1] += 50/downscaler 
+                else:
+                    self.yaw += 0.00174533/10
                 
                 
-            if 400<=t<450: # test width shift / roll movement
-                #self.roll += 0.00174533/8.8               
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][0] += 50/downscaler        
-                   
+            if 400<=t<450: # test width shift / roll movement   
+                if xyz_mode:            
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][0] += 50/downscaler        
+                else:
+                    self.roll += 0.00174533/8.8
+                       
             elif 450<=t<550:
-                #self.roll -= 0.00174533/8.8
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][0] -= 50/downscaler   
+                if xyz_mode:            
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][0] -= 50/downscaler        
+                else:
+                    self.roll += 0.00174533/8.8  
             
             elif 550<=t<600:
-                #self.roll += 0.00174533/8.8
-                for i in range(0,4):
-                   self.hip_to_toe_pos[i][0] += 50/downscaler 
+                if xyz_mode:            
+                    for i in range(0,4):
+                        self.hip_to_toe_pos[i][0] += 50/downscaler        
+                else:
+                    self.roll += 0.00174533/8.8
                 
    
             for legIdx in range(0,4):
@@ -266,6 +282,8 @@ class EffortPublisher:
                 self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
 
             t+=1
+            if t==599:
+                xyz_mode = not xyz_mode
             t %= 600
             self.rate.sleep()
          
