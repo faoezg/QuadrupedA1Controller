@@ -253,38 +253,29 @@ class EffortPublisher:
                 self.hip_to_toe_pos[2][0] += 50/downscaler
                 self.hip_to_toe_pos[3][0] += 50/downscaler"""
             
-            
-            # calculate global positions based on current hip_to_toe_position
-            self.global_positions[0] = global_foot_pos(0,self.hip_to_toe_pos[0])
-            self.global_positions[1] = global_foot_pos(1,self.hip_to_toe_pos[1])
-            self.global_positions[2] = global_foot_pos(2,self.hip_to_toe_pos[2])
-            self.global_positions[3] = global_foot_pos(3,self.hip_to_toe_pos[3])
-            
-            self.global_positions[0] = apply_rpy(self.global_positions[0][0], self.global_positions[0][1], self.global_positions[0][2],
-                                                 self.roll, self.pitch, self.yaw)
-            self.global_positions[1] = apply_rpy(self.global_positions[1][0], self.global_positions[1][1], self.global_positions[1][2],
-                                                 self.roll, self.pitch, self.yaw)
-            self.global_positions[2] = apply_rpy(self.global_positions[2][0], self.global_positions[2][1], self.global_positions[2][2],
-                                                 self.roll, self.pitch, self.yaw)
-            self.global_positions[3] = apply_rpy(self.global_positions[3][0], self.global_positions[3][1], self.global_positions[3][2],
-                                                 self.roll, self.pitch, self.yaw)
-            
-            # calculate new hip to toe positions
-            self.hip_to_toe_pos[0] = local_foot_pos(0,self.global_positions[0])
-            self.hip_to_toe_pos[1] = local_foot_pos(1,self.global_positions[1])
-            self.hip_to_toe_pos[2] = local_foot_pos(2,self.global_positions[2])
-            self.hip_to_toe_pos[3] = local_foot_pos(3,self.global_positions[3])
-             
             current_FL = [self.positions[1], self.positions[2],self.positions[0]]
+            current_FR = [self.positions[4], self.positions[5],self.positions[3]]
+            current_RL = [self.positions[7], self.positions[8],self.positions[6]]
+            current_RR = [self.positions[10], self.positions[11],self.positions[9]]
+            
+            for legIdx in range(0,4):
+                # calculate global positions (base to foot)
+                self.global_positions[legIdx] = global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
+                
+                # apply RPY via rotation matrix
+                self.global_positions[legIdx] = apply_rpy(self.global_positions[legIdx][0], self.global_positions[legIdx][1], 
+                                                          self.global_positions[legIdx][2], self.roll, self.pitch, self.yaw)
+                
+                # set new local position (hip to foot)
+                self.hip_to_toe_pos[legIdx] = local_foot_pos(legIdx,self.global_positions[legIdx])
+                
+             
             ths_FL = calc_correct_thetas([self.hip_to_toe_pos[0][0], self.hip_to_toe_pos[0][1], self.hip_to_toe_pos[0][2]], current_FL, True)
             
-            current_FR = [self.positions[4], self.positions[5],self.positions[3]]
             ths_FR = calc_correct_thetas([self.hip_to_toe_pos[1][0], self.hip_to_toe_pos[1][1], self.hip_to_toe_pos[1][2]], current_FR, False)
             
-            current_RL = [self.positions[7], self.positions[8],self.positions[6]]
             ths_RL = calc_correct_thetas([self.hip_to_toe_pos[2][0], self.hip_to_toe_pos[2][1], self.hip_to_toe_pos[2][2]], current_RL, isLeft = True)
             
-            current_RR = [self.positions[10], self.positions[11],self.positions[9]]
             ths_RR = calc_correct_thetas([self.hip_to_toe_pos[3][0], self.hip_to_toe_pos[3][1], self.hip_to_toe_pos[3][2]], current_RR, isLeft = False)
             
             
