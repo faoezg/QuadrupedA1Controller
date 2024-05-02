@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import rospy
+from tf import transformations
 from gazebo_msgs.srv import ApplyJointEffort
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState, Imu
 from unitree_legged_msgs.msg import MotorCmd
 import numpy as np
 import A1_kinematics
@@ -67,35 +68,6 @@ class Trajectory_Planner:
         print(y,z)
         x = 8.38      
         return x,y,z
-    
-def calc_correct_thetas(position, prev_ths, isLeft):
-    possible_joint_angles = A1_kinematics.calc_joint_angles(position, isLeft)
-
-    if len(possible_joint_angles) == 0:
-        print("no possible angles could be found for this Positon. Stop")
-        return prev_ths                  
-
-    min_val = calc_joint_difference(prev_ths,possible_joint_angles[0])
-    min_at = 0
-    
-    for i in range(1, len(possible_joint_angles)):
-        difference = calc_joint_difference(prev_ths,possible_joint_angles[i])
-        if(difference < min_val):
-            min_val = difference
-            min_at = i
-
-    return possible_joint_angles[min_at]
-    
-
-def calc_joint_difference(prev_ths, cur_ths):  # computes a cumulative absolute difference between joint configs
-    diff_th0 = np.abs(prev_ths[0] - cur_ths[0])
-
-    diff_th2 = np.abs(prev_ths[1] - cur_ths[1])
-
-    diff_th3 = np.abs(prev_ths[2] - cur_ths[2])
-
-    return diff_th0 + diff_th2 + diff_th3
-
     
 def global_foot_pos(id, position):  # calculates the foot position in reference to the base link of the quadruped
 
@@ -165,6 +137,7 @@ class EffortPublisher:
         rospy.wait_for_service('/gazebo/apply_joint_effort')
         self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
+        rospy.Subscriber("/trunk_imu", Imu, self.imu_callback)
         
         self.rate = rospy.Rate(200)
         
@@ -202,7 +175,7 @@ class EffortPublisher:
         while not rospy.is_shutdown():
             downscaler = 300
             
-            if 0<=t<50: # test length shift / pitch rotation        
+            """if 0<=t<50: # test length shift / pitch rotation        
                 if self.xyz_mode:
                     for i in range(0,4):
                         self.hip_to_toe_pos[i][2] += 50/downscaler 
@@ -261,7 +234,7 @@ class EffortPublisher:
                     for i in range(0,4):
                         self.hip_to_toe_pos[i][0] += 50/downscaler        
                 else:
-                    self.roll += 0.00174533/8.8
+                    self.roll += 0.00174533/8.8"""
                 
    
             for legIdx in range(0,4):
@@ -269,18 +242,22 @@ class EffortPublisher:
                 self.global_positions[legIdx] = global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
                 
                 # apply RPY via rotation matrix
-                self.global_positions[legIdx] = apply_rpy(self.global_positions[legIdx][0], self.global_positions[legIdx][1], 
+                self.global_positions[legIdx] = apply_rpy(self.global_positions[legIdx][0], 
+                                                          self.global_positions[legIdx][1], 
                                                           self.global_positions[legIdx][2], self.roll, self.pitch, self.yaw)
                 
                 # set new local position (hip to foot)
                 self.hip_to_toe_pos[legIdx] = local_foot_pos(legIdx,self.global_positions[legIdx])
                 
                 # get current leg angles from robot
-                current_ths = [self.positions[legIdx*3 + 1], self.positions[legIdx*3 + 2], self.positions[legIdx*3]]
+                current_ths = [self.positions[legIdx*3 + 1], 
+                               self.positions[legIdx*3 + 2], 
+                               self.positions[legIdx*3]]
                 
                 # calculate closest solution for next position
-                goal_ths  = calc_correct_thetas([self.hip_to_toe_pos[legIdx][0], self.hip_to_toe_pos[legIdx][1], self.hip_to_toe_pos[legIdx][2]],
-                                                current_ths, legIdx % 2 == 0)
+                goal_ths  = A1_kinematics.calc_correct_thetas([self.hip_to_toe_pos[legIdx][0], 
+                                                               self.hip_to_toe_pos[legIdx][1], 
+                                                               self.hip_to_toe_pos[legIdx][2]], current_ths, legIdx % 2 == 0)
                 
                 # set goal angles for corresponding leg
                 self.goal_pos[legIdx*3] = goal_ths[2]
@@ -306,6 +283,25 @@ class EffortPublisher:
         self.positions = data.position
         self.velocities = data.velocity
     
+    def imu_callback(self, data):
+        quaternion = [data.orientation.w,
+                      data.orientation.x, 
+                      data.orientation.y, 
+                      data.orientation.z]
+        
+        euler_orientation = transformations.euler_from_quaternion(quaternion)
+        
+        self.current_roll = euler_orientation[2]
+        self.current_pitch = euler_orientation[1]
+        self.current_yaw = euler_orientation[0] + np.pi
+        
+        
+        self.pitch = -self.current_pitch
+        self.roll = self.current_roll
+        #self.yaw = -self.current_yaw
+        #print(f"Angles: \n {euler_orientation} \n_________________________________________________________")
+        
+        
     def calculate_joint_effort(self):
         position_error = np.subtract(self.goal_pos,self.positions)
         velocity_error = np.subtract(self.goal_vel,self.velocities)

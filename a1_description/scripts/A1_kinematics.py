@@ -14,7 +14,7 @@ th2_min = -1.05 - np.pi/2
 th3_max = -0.92
 th3_min = -2.69
 
-def get_pw(th0, th2, th3, isLeft = True):
+def get_pw(th0, th2, th3, isLeft = True):  # returns end-effector position relative to hip joint
     a0 = 8.38
     a0 = -1*a0 if isLeft == True else a0
 
@@ -24,7 +24,7 @@ def get_pw(th0, th2, th3, isLeft = True):
     return [px, py, pz]
 
 
-class InverseKinematics():
+class InverseKinematics():  
     def __init__(self, a0, a2, a3):
         self.a0 = a0
         self.a2 = a2
@@ -101,3 +101,32 @@ def calc_joint_angles(position,isLeft=True):
             
     #print(f"Correct solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
     return fitting_ths
+
+
+def calc_correct_thetas(position, prev_ths, isLeft):
+    possible_joint_angles = calc_joint_angles(position, isLeft)
+
+    if len(possible_joint_angles) == 0:
+        print("no possible angles could be found for this Positon. Stop")
+        return prev_ths                  
+
+    min_val = calc_joint_difference(prev_ths,possible_joint_angles[0])
+    min_at = 0
+    
+    for i in range(1, len(possible_joint_angles)):
+        difference = calc_joint_difference(prev_ths,possible_joint_angles[i])
+        if(difference < min_val):
+            min_val = difference
+            min_at = i
+
+    return possible_joint_angles[min_at]
+
+
+def calc_joint_difference(prev_ths, cur_ths):  # computes a cumulative absolute difference between joint configs
+    diff_th0 = np.abs(prev_ths[0] - cur_ths[0])
+
+    diff_th2 = np.abs(prev_ths[1] - cur_ths[1])
+
+    diff_th3 = np.abs(prev_ths[2] - cur_ths[2])
+
+    return diff_th0 + diff_th2 + diff_th3
