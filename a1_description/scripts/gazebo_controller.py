@@ -8,16 +8,8 @@ from unitree_legged_msgs.msg import MotorCmd
 import numpy as np
 import A1_kinematics
 
-l1 = l2 = 0.20
-lm1 = 0.030323
-lm2 = 0.096933
-g = 9.81
-m1 = 0.888 # thigh mass
-m2 = 0.151 # calf mass
-I1 = 0.001110200 # thigh Izz
-I2 = 0.000031158 # calf Izz
-Kp = 300
-Kd = 8
+Kp = 100
+Kd = 5
 
 th1_max = 4.18
 th1_min = -1.05
@@ -33,18 +25,18 @@ joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
                 "RL_calf_joint","RL_hip_joint","RL_thigh_joint",
                 "RR_calf_joint","RR_hip_joint","RR_thigh_joint"]
 
-command_topics = ["/a1_gazebo/FL_calf_joint/command",
-                  "/a1_gazebo/FL_hip_joint/command",
-                  "/a1_gazebo/FL_thigh_joint/command",
-                  "/a1_gazebo/FR_calf_joint/command",
-                  "/a1_gazebo/FR_hip_joint/command",
-                  "/a1_gazebo/FR_thigh_joint/command",
-                  "/a1_gazebo/RL_calf_joint/command",
-                  "/a1_gazebo/RL_hip_joint/command",
-                  "/a1_gazebo/RL_thigh_joint/command",
-                  "/a1_gazebo/RR_calf_joint/command",
-                  "/a1_gazebo/RR_hip_joint/command",
-                  "/a1_gazebo/RR_thigh_joint/command"]
+command_topics = ["/a1_gazebo/FL_calf_controller/command",
+                  "/a1_gazebo/FL_hip_controller/command",
+                  "/a1_gazebo/FL_thigh_controller/command",
+                  "/a1_gazebo/FR_calf_controller/command",
+                  "/a1_gazebo/FR_hip_controller/command",
+                  "/a1_gazebo/FR_thigh_controller/command",
+                  "/a1_gazebo/RL_calf_controller/command",
+                  "/a1_gazebo/RL_hip_controller/command",
+                  "/a1_gazebo/RL_thigh_controller/command",
+                  "/a1_gazebo/RR_calf_controller/command",
+                  "/a1_gazebo/RR_hip_controller/command",
+                  "/a1_gazebo/RR_thigh_controller/command"]
 
 # TODO: in control loop adding publishers to the above topics
 # Note: mode = 10, and tau = calculated effort
@@ -68,6 +60,7 @@ class Trajectory_Planner:
         print(y,z)
         x = 8.38      
         return x,y,z
+    
     
 def global_foot_pos(id, position):  # calculates the foot position in reference to the base link of the quadruped
 
@@ -135,11 +128,11 @@ class EffortPublisher:
     def __init__(self):
         rospy.init_node('effort_publisher', anonymous=True)
         rospy.wait_for_service('/gazebo/apply_joint_effort')
-        self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)
+        # self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)  # if you want to send torque directly to gazebo
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
         rospy.Subscriber("/trunk_imu", Imu, self.imu_callback)
         
-        self.rate = rospy.Rate(200)
+        self.rate = rospy.Rate(100)
         
         self.positions = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
@@ -167,8 +160,10 @@ class EffortPublisher:
                                  [0,0,0],
                                  [0,0,0],
                                  [0,0,0]]
-        
-        
+        self.publishers = []
+        for topic in command_topics:
+            self.publishers.append(rospy.Publisher(topic,MotorCmd, queue_size=0))
+                
     def publish_efforts(self):
         t = 0
         self.xyz_mode = True
@@ -264,12 +259,23 @@ class EffortPublisher:
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
                 self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2     
             
-            efforts = self.calculate_joint_effort()            
-            for i, eff in enumerate(efforts):
+            #efforts = self.calculate_joint_effort()   
+             
+            # create and configure MotorCmd message 
+            motor_command = MotorCmd()
+            motor_command.mode = 10  
+            motor_command.Kp = Kp
+            motor_command.Kd = Kd 
+                 
+            """for i, eff in enumerate(efforts):
                 if(np.abs(eff) > max_eff): 
                     eff = np.sign(eff) * max_eff
-
-                self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
+                    motor_command.tau = eff
+            """        
+            for i in range(0, len(joint_names)):
+                motor_command.q = self.goal_pos[i]
+                self.publishers[i].publish(motor_command)  
+                #self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
 
             t+=1
             if t % 600 == 0:
@@ -296,8 +302,8 @@ class EffortPublisher:
         self.current_yaw = euler_orientation[0] + np.pi
         
         
-        self.pitch = -self.current_pitch
-        self.roll = self.current_roll
+        self.pitch = -self.current_pitch/100
+        self.roll = self.current_roll/100  # /5 to smooth the movement
         #self.yaw = -self.current_yaw
         #print(f"Angles: \n {euler_orientation} \n_________________________________________________________")
         
@@ -306,7 +312,7 @@ class EffortPublisher:
         position_error = np.subtract(self.goal_pos,self.positions)
         velocity_error = np.subtract(self.goal_vel,self.velocities)
 
-        control_effort = np.add(Kp * position_error,Kd * velocity_error)
+        control_effort = np.add(Kp * position_error, Kd * velocity_error)
         return control_effort
     
 
