@@ -2,7 +2,7 @@
 import numpy as np
 
 # our constant a0,a1,a2 DH Parameters 
-a0,a2,a3 = [8.38, 20.0, 20.0]
+a0,a2,a3 = [0.0838, 0.20, 0.20]
 
 # constants
 th0_max = 0.80
@@ -15,7 +15,7 @@ th3_max = -0.92
 th3_min = -2.69
 
 def get_pw(th0, th2, th3, isLeft = True):  # returns end-effector position relative to hip joint
-    a0 = 8.38
+    #a0 = 0.0838
     a0 = -1*a0 if isLeft == True else a0
 
     px = a0 * np.cos(th0) + np.sin(th0) * (a2 * np.sin(th2) + a3 * np.sin(th2 + th3))
@@ -66,7 +66,7 @@ class InverseKinematics():
 
     
 def calc_joint_angles(position,isLeft=True):
-    a0 = 8.38
+    #a0 = 0.0838
     ik = InverseKinematics(-a0,a2,a3) if isLeft == True else InverseKinematics(a0,a2,a3) 
     
     # calculate all theta3s (calf):

@@ -17,8 +17,8 @@ th2_max = -0.92
 th2_min = -2.69
 max_eff = 55
 
-leg_offset_y = 0.1805*100
-leg_offset_x = 0.047*100
+leg_offset_y = 0.1805
+leg_offset_x = 0.047
 
 joint_names = ["FL_calf_joint","FL_hip_joint","FL_thigh_joint",
                 "FR_calf_joint","FR_hip_joint","FR_thigh_joint",
@@ -37,13 +37,10 @@ command_topics = ["/a1_gazebo/FL_calf_controller/command",
                   "/a1_gazebo/RR_calf_controller/command",
                   "/a1_gazebo/RR_hip_controller/command",
                   "/a1_gazebo/RR_thigh_controller/command"]
-
-# TODO: in control loop adding publishers to the above topics
-# Note: mode = 10, and tau = calculated effort
                   
 class Trajectory_Planner:
     def __init__(self) -> None:
-        self.Rh = 30
+        self.Rh = 0.30
     
     def step_trajectory(self, H, Sx, tgp, t):
         
@@ -60,6 +57,32 @@ class Trajectory_Planner:
         print(y,z)
         x = 8.38      
         return x,y,z
+    
+    def big_steppa(self, position, step_height, step_length, T_period, T_stand, t):
+        # -positioon: current x,y,z coordinates
+        # -step height: adjusts movement in Y direction (up/down)
+        # -step_length: adjusts movement in Z direction (forward/backward)
+        # -T_period: duration of one step
+        # -T_stand: duration of stand phase
+        # -t: current time
+        y = position[1]
+        z = position[2]
+        T_swing = T_period - T_stand
+        print(t)        
+        if t <= T_stand/2:
+            # no movement up, only back
+            z = t*(step_length)/(T_stand)
+        
+        if T_stand/2 <= t < T_stand/2 + T_swing:
+            # movement in y direction according to sin, + movement forward
+            z = (step_length) - t*(step_length)/T_swing
+            
+        if T_stand/2 + T_swing <= t < T_period:
+            # no movement up, only back
+            z = -2*step_length + t*(step_length)/(T_stand)
+
+        print(z)
+        return [position[0], y, z]
     
     
 def global_foot_pos(id, position):  # calculates the foot position in reference to the base link of the quadruped
@@ -132,8 +155,8 @@ class EffortPublisher:
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
         rospy.Subscriber("/trunk_imu", Imu, self.imu_callback)
         
-        self.rate = rospy.Rate(100)
         
+        self.rate = rospy.Rate(10)
         self.positions = np.array([0,0,0,0,0,0,
                           0,0,0,0,0,0])
         
@@ -142,15 +165,15 @@ class EffortPublisher:
                             
 
         self.goal_pos = np.array([-1.5708, 0, 0.785398, -1.5708, 0, 0.785398,
-                                 -1.5708, 0, 0.785398, -1.5708, 0, 0.785398])
+                                 -1.5708, 0, 0.785398, -1.5708, 0, 0.785398])  # standing position
         
         self.goal_vel = np.array([0,0,0,0,0,0,
                          0,0,0,0,0,0])
         
-        self.hip_to_toe_pos = [[-8.38, 22.5, 0],  # FL
-                               [8.38, 22.5, 0],  # FR
-                               [-8.38, 22.5, 0],  # RL
-                               [8.38, 22.5, 0]]  # RR
+        self.hip_to_toe_pos = [[-0.0838, 0.225, 0],  # FL
+                               [0.0838, 0.225, 0],  # FR
+                               [-0.0838, 0.225, 0],  # RL
+                               [0.0838, 0.225, 0]]  # RR
 
         self.yaw = 0  # yaw rotation of body
         self.pitch = 0  # pitch rotation 
@@ -167,10 +190,11 @@ class EffortPublisher:
     def publish_efforts(self):
         t = 0
         self.xyz_mode = True
+        tp = Trajectory_Planner()
         while not rospy.is_shutdown():
-            downscaler = 300
+            """downscaler = 30000
             
-            """if 0<=t<50: # test length shift / pitch rotation        
+            if 0<=t<50: # test length shift / pitch rotation        
                 if self.xyz_mode:
                     for i in range(0,4):
                         self.hip_to_toe_pos[i][2] += 50/downscaler 
@@ -231,8 +255,14 @@ class EffortPublisher:
                 else:
                     self.roll += 0.00174533/8.8"""
                 
+                
+   
+            
    
             for legIdx in range(0,4):
+                # calculate next step:
+                self.hip_to_toe_pos[legIdx] = tp.big_steppa(self.hip_to_toe_pos[legIdx],0.1,0.2,100,50,t)
+                
                 # calculate global positions (base to foot)
                 self.global_positions[legIdx] = global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
                 
@@ -271,17 +301,18 @@ class EffortPublisher:
                 if(np.abs(eff) > max_eff): 
                     eff = np.sign(eff) * max_eff
                     motor_command.tau = eff
-            """        
+            """ 
+                   
             for i in range(0, len(joint_names)):
                 motor_command.q = self.goal_pos[i]
                 self.publishers[i].publish(motor_command)  
                 #self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
 
             t+=1
-            if t % 600 == 0:
+            if t % 100 == 0:
                 self.xyz_mode = not self.xyz_mode
 
-            t %= 600
+            t %= 100
             self.rate.sleep()
          
         
@@ -303,7 +334,7 @@ class EffortPublisher:
         
         
         self.pitch = -self.current_pitch/100
-        self.roll = self.current_roll/100  # /5 to smooth the movement
+        self.roll = self.current_roll/100
         #self.yaw = -self.current_yaw
         #print(f"Angles: \n {euler_orientation} \n_________________________________________________________")
         
