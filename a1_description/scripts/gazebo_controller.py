@@ -8,7 +8,7 @@ from unitree_legged_msgs.msg import MotorCmd
 import numpy as np
 import A1_kinematics
 
-Kp = 100
+Kp = 300
 Kd = 5
 
 th1_max = 4.18
@@ -68,30 +68,42 @@ class Trajectory_Planner:
         x = position[0]
         y = position[1]
         z = position[2]
-        T_swing = 1/4 * T_period
-        T_stand = 3/4 * T_period
-        if legIdx == 0:
-            t += 75
-            t %= T_period
-        if legIdx == 3:
-            t +=50
-            t %= T_period
+        T_swing = 1/6 * T_period
+        T_stand = 3/6 * T_period
+        global_t = t
+        
         if legIdx == 2:
-            t +=25
-            t %= T_period   
+            t += 1/6 * T_period
+            t %= T_period
             
+        if legIdx == 0:
+            t += 2/6* T_period
+            t %= T_period
+        
+        if legIdx == 3:
+            t += 4/6 * T_period
+            t %= T_period 
+            
+        if legIdx == 1:
+            t += 5/6 * T_period
+            t %= T_period 
+                         
+        if 3/6 * T_period <= global_t < 4/6*T_period:
+            x += 1.5*0.0048  
+        elif global_t < 1/6*T_period:
+            x -= 1.5*0.0048
             
         if t < T_stand:
-            # no movement up, only back
-            z = t*(step_length)/(T_stand) - step_length/2
+                # no movement up, only back
+            z = t*(step_length)/(T_stand) - step_length/2 + 0.05
+                
             
-        
         if T_stand <= t < T_stand + T_swing:
             u = t - T_stand
             # movement in y direction according to sin, + movement forward
             y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225 # <- base height!
-            z = (step_length) - u*(step_length)/T_swing - step_length/2
-            
+            z = (step_length) - u*(step_length)/T_swing - step_length/2 + 0.05
+                
         return [x, y, z]
     
     
@@ -166,30 +178,27 @@ class EffortPublisher:
         rospy.Subscriber("/trunk_imu", Imu, self.imu_callback)
         
         
-        self.rate = rospy.Rate(25)
+        self.rate = rospy.Rate(15)
         self.positions = np.array([0,0,0,0,0,0,
-                          0,0,0,0,0,0])
+                                   0,0,0,0,0,0])
         
         self.velocities = np.array([0,0,0,0,0,0,
-                          0,0,0,0,0,0])
+                                    0,0,0,0,0,0])
                             
 
         self.goal_pos = np.array([-1.5708, 0, 0.785398, -1.5708, 0, 0.785398,
                                  -1.5708, 0, 0.785398, -1.5708, 0, 0.785398])  # standing position
-        
-        self.goal_vel = np.array([0,0,0,0,0,0,
-                         0,0,0,0,0,0])
         
         self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
                                [0.0838, 0.225, 0.0],  # FR
                                [-0.0838, 0.225, 0.0],  # RL
                                [0.0838, 0.225, 0.0]]  # RR
 
-        self.yaw = 0.001  # yaw rotation of body
+        self.yaw = 0.0  # yaw rotation of body
         self.pitch = 0  # pitch rotation 
         self.roll = 0 # roll rotation
         
-        self.x_shift = 0  # amount of leaning to compensate COM for moving a leg 
+        self.x_shift = 0.06  # amount of leaning to compensate COM for moving a leg 
         
         self.global_positions = [[0,0,0],
                                  [0,0,0],
@@ -202,11 +211,13 @@ class EffortPublisher:
     def publish_efforts(self):
         t = 0
         tp = Trajectory_Planner()
+        step_period = 100
+        
         while not rospy.is_shutdown():
             
             for legIdx in range(0,4):
                 # calculate next step:
-                self.hip_to_toe_pos[legIdx] = tp.big_steppa(legIdx, self.hip_to_toe_pos[legIdx], 0.1, 0.1, 100, t)
+                self.hip_to_toe_pos[legIdx] = tp.big_steppa(legIdx, self.hip_to_toe_pos[legIdx], 0.05, 0.1, step_period, t)
                 
                 # calculate global positions (base to foot)
                 self.global_positions[legIdx] = global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
@@ -228,7 +239,7 @@ class EffortPublisher:
                 # calculate closest solution for next position
                 goal_ths  = A1_kinematics.calc_correct_thetas([self.hip_to_toe_pos[legIdx][0] + self.x_shift, 
                                                                self.hip_to_toe_pos[legIdx][1], 
-                                                               self.hip_to_toe_pos[legIdx][2]+ 0.05], current_ths, legIdx % 2 == 0)
+                                                               self.hip_to_toe_pos[legIdx][2]], current_ths, legIdx % 2 == 0)
                 
                 # set goal angles for corresponding leg
                 self.goal_pos[legIdx*3] = goal_ths[2]
@@ -242,25 +253,13 @@ class EffortPublisher:
             motor_command.mode = 10  
             motor_command.Kp = Kp
             motor_command.Kd = Kd 
-                 
-            """for i, eff in enumerate(efforts):
-                if(np.abs(eff) > max_eff): 
-                    eff = np.sign(eff) * max_eff
-                    motor_command.tau = eff
-            """ 
                    
             for i in range(0, len(joint_names)):
                 motor_command.q = self.goal_pos[i]
                 self.publishers[i].publish(motor_command)  
-                #self.apply_effort(joint_names[i], eff, rospy.Time(0), rospy.Duration(0.01))
-
             
-            if t% 25  == 0:    
-                self.x_shift *= -1
-            
-                  
             t+=1
-            t %= 100
+            t %= step_period
             self.rate.sleep()
          
         
