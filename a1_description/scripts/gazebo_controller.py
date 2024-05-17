@@ -2,7 +2,6 @@
 
 import rospy
 from tf import transformations
-from gazebo_msgs.srv import ApplyJointEffort
 from sensor_msgs.msg import JointState, Imu
 from unitree_legged_msgs.msg import MotorCmd
 import numpy as np
@@ -173,12 +172,11 @@ class EffortPublisher:
     def __init__(self):
         rospy.init_node('effort_publisher', anonymous=True)
         rospy.wait_for_service('/gazebo/apply_joint_effort')
-        # self.apply_effort = rospy.ServiceProxy('/gazebo/apply_joint_effort', ApplyJointEffort)  # if you want to send torque directly to gazebo
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
         rospy.Subscriber("/trunk_imu", Imu, self.imu_callback)
         
         
-        self.rate = rospy.Rate(15)
+        self.rate = rospy.Rate(25)
         self.positions = np.array([0,0,0,0,0,0,
                                    0,0,0,0,0,0])
         
@@ -245,9 +243,7 @@ class EffortPublisher:
                 self.goal_pos[legIdx*3] = goal_ths[2]
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
                 self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2     
-            
-            #efforts = self.calculate_joint_effort()   
-             
+                         
             # create and configure MotorCmd message 
             motor_command = MotorCmd()
             motor_command.mode = 10  
@@ -280,8 +276,8 @@ class EffortPublisher:
         self.current_yaw = euler_orientation[0] + np.pi
         
         
-        #self.pitch = -self.current_pitch/100
-        #self.roll = self.current_roll/100
+        self.pitch = -self.current_pitch/100
+        self.roll = self.current_roll/100
         #self.yaw = -self.current_yaw
         #print(f"Angles: \n {euler_orientation} \n_________________________________________________________")
         
