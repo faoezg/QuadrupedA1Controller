@@ -184,8 +184,17 @@ class EffortPublisher:
                                     0,0,0,0,0,0])
                             
 
-        self.goal_pos = np.array([-1.5708, 0, 0.785398, -1.5708, 0, 0.785398,
-                                 -1.5708, 0, 0.785398, -1.5708, 0, 0.785398])  # standing position
+        """self.goal_pos = np.array([-1.5708, 0, 0.785398, -1.5708, 0, 0.785398,
+                                 -1.5708, 0, 0.785398, -1.5708, 0, 0.785398])  # standing position"""
+        self.goal_pos = np.array([-1.939770004895676, -0.26771448567122835, 1.2482740596122017, 
+                                  -1.7291994402849626, -0.240265426734668, 0.8715556739001613, 
+                                  -2.022709353102668, -0.27597424214704613, 1.147731458008173, 
+                                  -1.8309775156913535, -0.2575122107675636, 0.9668397173376384])  # start of walking loop
+        
+        self.startup_pos = np.array([-2.6965310400372937, 0.49888734456542494, 1.120544218976467, 
+                                    -2.6965319796256715, -0.4970180265271118, 1.1206134112047828, 
+                                    -2.696527603682461, 0.4957650374287921, 1.1204999226739023, 
+                                    -2.69653004841636, -0.49384031828850805, 1.1206527911125832])  # lying down pose
         
         self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
                                [0.0838, 0.225, 0.0],  # FR
@@ -211,6 +220,27 @@ class EffortPublisher:
         tp = Trajectory_Planner()
         step_period = 100
         
+        # create and configure MotorCmd message 
+        motor_command = MotorCmd()
+        motor_command.mode = 10  
+        motor_command.Kp = Kp
+        motor_command.Kd = Kd 
+        
+        ## Startup sequence:
+        print("Standing up")
+        num_steps = 100
+        step = (self.goal_pos - self.startup_pos)/num_steps
+        
+        for i in range(num_steps):
+            for i in range(0, len(joint_names)):
+                self.startup_pos[i] += step[i]
+                motor_command.q = self.startup_pos[i]
+    
+                self.publishers[i].publish(motor_command)  
+            self.rate.sleep()
+        
+        ## Movement Loop
+        print("Start of Movement Loop")
         while not rospy.is_shutdown():
             
             for legIdx in range(0,4):
@@ -244,17 +274,13 @@ class EffortPublisher:
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
                 self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2     
                          
-            # create and configure MotorCmd message 
-            motor_command = MotorCmd()
-            motor_command.mode = 10  
-            motor_command.Kp = Kp
-            motor_command.Kd = Kd 
-                   
             for i in range(0, len(joint_names)):
                 motor_command.q = self.goal_pos[i]
                 self.publishers[i].publish(motor_command)  
-            
+
             t+=1
+            if t% step_period == 0:
+                print(self.positions)
             t %= step_period
             self.rate.sleep()
          
