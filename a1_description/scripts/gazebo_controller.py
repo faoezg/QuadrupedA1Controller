@@ -34,20 +34,16 @@ command_topics = ["/a1_gazebo/FL_calf_controller/command",
     
 class A1Controller:
     def __init__(self):
-        rospy.init_node('effort_publisher', anonymous=True)
-        rospy.wait_for_service('/gazebo/apply_joint_effort')
+        rospy.init_node('joint_command_publisher', anonymous=True)
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
         rospy.Subscriber("/trunk_imu", Imu, self.imu_callback)
-        
         
         self.rate = rospy.Rate(25)
         self.positions = np.array([0,0,0,0,0,0,
                                    0,0,0,0,0,0])
-        
         self.velocities = np.array([0,0,0,0,0,0,
                                     0,0,0,0,0,0])
-                            
-
+                        
         #self.goal_pos = np.array([-1.5708, 0, 0.785398, -1.5708, 0, 0.785398,-1.5708, 0, 0.785398, -1.5708, 0, 0.785398])  # standing position
                                  
         self.goal_pos = np.array([-1.939770004895676, -0.26771448567122835, 1.2482740596122017, 
@@ -68,9 +64,8 @@ class A1Controller:
         self.yaw = 0.0  # yaw rotation of body
         self.pitch = 0  # pitch rotation 
         self.roll = 0 # roll rotation
-        
         self.x_shift = 0.06  # amount of leaning to compensate COM for moving a leg 
-        
+
         self.global_positions = [[0,0,0],
                                  [0,0,0],
                                  [0,0,0],
@@ -78,6 +73,7 @@ class A1Controller:
         self.publishers = []
         for topic in command_topics:
             self.publishers.append(rospy.Publisher(topic,MotorCmd, queue_size=0))
+                
                 
     def publish_commands(self):
         t = 0
@@ -147,6 +143,7 @@ class A1Controller:
 
             self.rate.sleep()
          
+    
         
     def joint_states_callback(self, data):
         self.positions = data.position

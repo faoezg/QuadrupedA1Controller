@@ -107,7 +107,6 @@ def calc_correct_thetas(position, prev_ths, isLeft):
     possible_joint_angles = calc_joint_angles(position, isLeft)
 
     if len(possible_joint_angles) == 0:
-        print("no possible angles could be found for this Positon. Stop")
         return prev_ths                  
 
     min_val = calc_joint_difference(prev_ths,possible_joint_angles[0])
