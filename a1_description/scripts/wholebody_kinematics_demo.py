@@ -3,7 +3,6 @@ import pygame
 import numpy as np
 import rospy
 import A1_kinematics
-
 from sensor_msgs.msg import JointState
 from unitree_legged_msgs.msg import MotorCmd
 from Trajectory_Planner import Trajectory_Planner
@@ -33,7 +32,7 @@ class PoseControllerUI:
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("Circular Sliders (Joysticks)")
+        pygame.display.set_caption("Pose Controller")
 
         # Constants
         self.SLIDER_RADIUS = 50
@@ -78,14 +77,19 @@ class PoseControllerUI:
                                [-0.0838, 0.225, 0.0],  # RL
                                [0.0838, 0.225, 0.0]]  # RR
         
-        self.yaw = 0.0  # yaw rotation of body
-        self.pitch = 0  # pitch rotation 
-        self.roll = 0 # roll rotation
+        self.d_yaw = 0.0  # yaw rotation change of body
+        self.d_pitch = 0  # pitch rotation change  
+        self.d_roll = 0 # roll rotation change 
 
-        self.global_positions = [[0,0,0],
-                                 [0,0,0],
-                                 [0,0,0],
-                                 [0,0,0]]
+        self.yaw = 0.0  # overall yaw
+        self.pitch = 0.0  
+        self.roll = 0.0 
+        
+
+        self.global_positions = [[0, 0, 0],
+                                 [0, 0, 0],
+                                 [0, 0, 0],
+                                 [0, 0, 0]]
         self.publishers = []
         for topic in command_topics:
             self.publishers.append(rospy.Publisher(topic,MotorCmd, queue_size=0))  # Create Publisher for each Joint
@@ -117,14 +121,17 @@ class PoseControllerUI:
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.active_joystick1 = False
                 self.active_joystick2 = False
+                self.d_roll = self.d_pitch = self.d_yaw = 0.0
+                self.joystick1_pos = self.CENTER1
+                self.joystick2_pos = self.CENTER2
             elif event.type == pygame.MOUSEMOTION:
                 if self.active_joystick1:
                     self.joystick1_pos = self.get_joystick_position(self.CENTER1, event.pos)
-                    self.roll = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
-                    self.pitch = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    self.d_roll = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    self.d_pitch = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
                 elif self.active_joystick2:
                     self.joystick2_pos = self.get_joystick_position(self.CENTER2, event.pos)
-                    self.yaw = ((self.joystick2_pos[0] - self.CENTER2[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    self.d_yaw = ((self.joystick2_pos[0] - self.CENTER2[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
                     self.b = ((self.joystick2_pos[1] - self.CENTER2[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
         return True
 
@@ -157,6 +164,25 @@ class PoseControllerUI:
             
             # ROS CONTROL LOOP
             for legIdx in range(0,4):                
+
+                # keep track of orientation change to limit the movement
+                self.yaw += self.d_yaw
+                self.pitch += self.d_pitch
+                self.roll += self.d_roll
+                rl = 1  # rotation limit
+                if not (-rl < self.yaw < rl):
+                    self.d_yaw = 0
+                    self.yaw = rl if np.sign(self.yaw) == 1 else -rl
+                
+                if not (-rl < self.roll < rl):
+                    self.d_roll = 0
+                    self.roll = rl if np.sign(self.roll) == 1 else -rl
+                    
+                if not (-rl < self.pitch < rl):
+                    self.d_pitch = 0
+                    self.pitch = rl if np.sign(self.pitch) == 1 else -rl
+                            
+                
                 # calculate global positions (base to foot)
                 self.global_positions[legIdx] = tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
                 
@@ -164,7 +190,7 @@ class PoseControllerUI:
                 self.global_positions[legIdx] = tp.apply_rpy(self.global_positions[legIdx][0], 
                                                           self.global_positions[legIdx][1], 
                                                           self.global_positions[legIdx][2], 
-                                                          self.roll, self.pitch, self.yaw)
+                                                          self.d_roll, self.d_pitch, self.d_yaw)
                 
                 # set new local position (hip to foot)
                 self.hip_to_toe_pos[legIdx] = tp.local_foot_pos(legIdx,self.global_positions[legIdx])
