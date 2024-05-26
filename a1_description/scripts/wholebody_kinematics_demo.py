@@ -48,10 +48,6 @@ class PoseControllerUI:
         self.active_joystick1 = False
         self.active_joystick2 = False
 
-        # Global variables
-        self.x, self.y = 0, 0
-        self.a, self.b = 0, 0
-
         
         # init ROS and Robots Positions:
         rospy.init_node('pose_publisher_ui', anonymous=True)
@@ -81,10 +77,12 @@ class PoseControllerUI:
         self.d_pitch = 0  # pitch rotation change  
         self.d_roll = 0 # roll rotation change 
 
-        self.yaw = 0.0  # overall yaw
-        self.pitch = 0.0  
-        self.roll = 0.0 
-        
+        self.slider_yaw = self.yaw = 0.0  # overall yaw
+                
+        self.slider_pitch = self.pitch = 0.0  
+    
+        self.slider_roll = self.roll = 0.0 
+        self.slider_height = 0.225
 
         self.global_positions = [[0, 0, 0],
                                  [0, 0, 0],
@@ -121,18 +119,22 @@ class PoseControllerUI:
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.active_joystick1 = False
                 self.active_joystick2 = False
-                self.d_roll = self.d_pitch = self.d_yaw = 0.0
+
+                # reset if slider is let go 
+                self.slider_pitch = self.slider_roll = self.slider_yaw = 0.0
+                self.slider_height = 0.225  # TODO: global height, x,y COORDINATES!!!!
                 self.joystick1_pos = self.CENTER1
                 self.joystick2_pos = self.CENTER2
+                
             elif event.type == pygame.MOUSEMOTION:
                 if self.active_joystick1:
                     self.joystick1_pos = self.get_joystick_position(self.CENTER1, event.pos)
-                    self.d_roll = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
-                    self.d_pitch = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    self.slider_roll = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
+                    self.slider_pitch = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
                 elif self.active_joystick2:
                     self.joystick2_pos = self.get_joystick_position(self.CENTER2, event.pos)
-                    self.d_yaw = ((self.joystick2_pos[0] - self.CENTER2[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
-                    self.b = ((self.joystick2_pos[1] - self.CENTER2[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    self.slider_yaw = ((self.joystick2_pos[0] - self.CENTER2[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
+                    self.slider_height = 0.225 - ((self.joystick2_pos[1] - self.CENTER2[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
         return True
 
     def run(self):
@@ -148,7 +150,7 @@ class PoseControllerUI:
         tp = Trajectory_Planner()
         ## Startup sequence:
         print("Standing up")
-        num_steps = 100
+        num_steps = 50
         step = (self.goal_pos - self.startup_pos)/num_steps
         
         for i in range(num_steps):
@@ -162,35 +164,25 @@ class PoseControllerUI:
         while running:
             running = self.handle_events()
             
+            yaw_error = (self.slider_yaw - self.yaw)/10  # dividing by 10 to smoothen the movement
+            pitch_error = (self.slider_pitch - self.pitch)/10
+            roll_error = (self.slider_roll - self.roll)/10
+            height_error = (self.slider_height -  self.hip_to_toe_pos[0][1])/10
+            #print(f"yaw: {self.yaw} \nslider_yaw: {self.slider_yaw}\nyaw_error:{yaw_error} \n__________________________")
+            #print(f"height: {self.hip_to_toe_pos[0][1]} \nslider_height: {self.slider_height}\nheight_error:{height_error} \n__________________________")
             # ROS CONTROL LOOP
             for legIdx in range(0,4):                
 
-                # keep track of orientation change to limit the movement
-                self.yaw += self.d_yaw
-                self.pitch += self.d_pitch
-                self.roll += self.d_roll
-                rl = 1  # rotation limit
-                if not (-rl < self.yaw < rl):
-                    self.d_yaw = 0
-                    self.yaw = rl if np.sign(self.yaw) == 1 else -rl
-                
-                if not (-rl < self.roll < rl):
-                    self.d_roll = 0
-                    self.roll = rl if np.sign(self.roll) == 1 else -rl
-                    
-                if not (-rl < self.pitch < rl):
-                    self.d_pitch = 0
-                    self.pitch = rl if np.sign(self.pitch) == 1 else -rl
-                            
+            
                 
                 # calculate global positions (base to foot)
                 self.global_positions[legIdx] = tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
                 
                 # apply RPY via rotation matrix
                 self.global_positions[legIdx] = tp.apply_rpy(self.global_positions[legIdx][0], 
-                                                          self.global_positions[legIdx][1], 
+                                                          self.global_positions[legIdx][1] + height_error, 
                                                           self.global_positions[legIdx][2], 
-                                                          self.d_roll, self.d_pitch, self.d_yaw)
+                                                          roll_error, pitch_error, yaw_error)
                 
                 # set new local position (hip to foot)
                 self.hip_to_toe_pos[legIdx] = tp.local_foot_pos(legIdx,self.global_positions[legIdx])
@@ -210,6 +202,15 @@ class PoseControllerUI:
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
                 self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2
             
+            self.yaw += yaw_error
+            self.pitch += pitch_error
+            self.roll += roll_error
+            self.hip_to_toe_pos[0][1] += height_error
+            self.hip_to_toe_pos[1][1] += height_error
+            self.hip_to_toe_pos[2][1] += height_error
+            self.hip_to_toe_pos[3][1] += height_error
+
+            height_error = roll_error = pitch_error = yaw_error = 0
             # send joint commands    
             for i in range(0, len(self.publishers)):
                 motor_command.q = self.goal_pos[i]
