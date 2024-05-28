@@ -64,8 +64,7 @@ class PoseControllerUI:
         
         self.positions = np.array([0,0,0,0,0,0,
                                    0,0,0,0,0,0])
-        self.velocities = np.array([0,0,0,0,0,0,
-                                    0,0,0,0,0,0])
+        
         self.goal_pos = np.array([-1.9583591983757351, -0.0007974578255129927, 0.9794434592400876, 
                                   -1.9580158278760527, 0.00048751519737599835, 0.97896869674112, 
                                   -1.968766039552742, 0.0005508150816577739, 0.9651295186701967, 
@@ -76,14 +75,15 @@ class PoseControllerUI:
                                     -2.696527603682461, 0.4957650374287921, 1.1204999226739023, 
                                     -2.69653004841636, -0.49384031828850805, 1.1206527911125832]) 
         self.base_height = 0.225
-        
+        self.base_width = -0.0838
         self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
                                [0.0838, 0.225, 0.0],  # FR
                                [-0.0838, 0.225, 0.0],  # RL
                                [0.0838, 0.225, 0.0]]  # RR
         
         self.slider_height  = self.height = self.hip_to_toe_pos[0][1]
-        
+        self.slider_width = self.width = self.hip_to_toe_pos[0][0]
+        self.slider_length = self.length = self.hip_to_toe_pos[0][2]
         self.slider_yaw = self.yaw = 0.0  # overall yaw
                 
         self.slider_pitch = self.pitch = 0.0  
@@ -136,6 +136,8 @@ class PoseControllerUI:
                 # reset if slider is let go 
                 self.slider_pitch = self.slider_roll = self.slider_yaw = 0.0
                 self.slider_height = self.base_height
+                self.slider_width = self.base_width
+                self.slider_length = 0.0
                 self.joystick1_pos = self.CENTER1
                 self.joystick2_pos = self.CENTER2
                 self.joystick3_pos = self.CENTER3
@@ -144,15 +146,17 @@ class PoseControllerUI:
                 if self.active_joystick1:
                     self.joystick1_pos = self.get_joystick_position(self.CENTER1, event.pos)
                     self.slider_roll = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
-
+                    self.slider_length = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    
                 elif self.active_joystick2:
                     self.joystick2_pos = self.get_joystick_position(self.CENTER2, event.pos)
                     self.slider_yaw = ((self.joystick2_pos[0] - self.CENTER2[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
-                    self.slider_height = self.base_height - ((self.joystick2_pos[1] - self.CENTER2[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10                 
+                    self.slider_height = self.base_height - ((self.joystick2_pos[1] - self.CENTER2[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10    
+                                 
                 elif self.active_joystick3:
                     self.joystick3_pos = self.get_joystick_position(self.CENTER3, event.pos)
                     self.slider_pitch = ((self.joystick3_pos[0] - self.CENTER3[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
-                    
+                    self.slider_width = self.base_width - ((self.joystick3_pos[1] - self.CENTER3[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
         return True
 
     def run(self):
@@ -183,17 +187,21 @@ class PoseControllerUI:
             running = self.handle_events()
             
             # calculate error for each joystick value to current value
+            roll_error = (self.slider_roll - self.roll)/10
             yaw_error = (self.slider_yaw - self.yaw)/10    # dividing by 10 to smoothen the movement
             pitch_error = (self.slider_pitch - self.pitch)/10
             height_error = (self.slider_height -  self.height)/10
-            roll_error = (self.slider_roll - self.roll)/10
+            length_error = (self.slider_length - self.length)/10
+            width_error = (self.slider_width - self.width)/10
             
             # ROS CONTROL LOOP
             for legIdx in range(0,4):                
 
                 # add translation
+                self.hip_to_toe_pos[legIdx][0] += width_error
                 self.hip_to_toe_pos[legIdx][1] += height_error
-
+                self.hip_to_toe_pos[legIdx][2] += length_error                
+                
                 # calculate global positions (base to foot)
                 self.global_positions[legIdx] = tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
                 
@@ -221,10 +229,13 @@ class PoseControllerUI:
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
                 self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2
             
+            # update the overall amount for each angle
             self.yaw += yaw_error
             self.pitch += pitch_error
             self.roll += roll_error
             self.height += height_error
+            self.length += length_error
+            self.width += width_error
             
             # send joint commands    
             for i in range(0, len(self.publishers)):
@@ -249,7 +260,6 @@ class PoseControllerUI:
         
     def joint_states_callback(self, data):
         self.positions = data.position
-        self.velocities = data.velocity
     
     
 
