@@ -21,8 +21,8 @@ Installation:
 - git clone the unitree_ros repository
 - inside unitree_ros: copy contents of unitree_ros_to_real into the corresponding folder
 - download unitree_legged_sdk v3.3.4, unzip and place the sdk into where it belongs in unitree_ros_to_real
-- build the catkin packages 
-- either remove or replace the a1_description package with our repository
+- git clone this repository
+- build the packages (catkin_make / catkin build)
 
 ## Usage:
 launch gazebo simulation and low level controllers (for motorCMD message):
@@ -37,7 +37,7 @@ if you were now to apply the instructions and provided nodes from unitree...
 
 ...there's either standing still or flying around the origin.
 
-## Run the actual controller (ours):
+## Run an actual controller (ours):
 
 ```
 rosrun a1_description wholebody_kinematics_demo.py
