@@ -15,6 +15,7 @@ Important Packages:
 - unitree_legged_sdk v3.3.4:
     https://github.com/unitreerobotics/unitree_legged_sdk/releases/tag/3.3.4
 - a recent version of pygame
+
 Installation:
 - in ~/catkin_ws/src/
 - git clone the unitree_ros repository
