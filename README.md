@@ -15,8 +15,6 @@ Important Packages:
 - unitree_legged_sdk v3.3.4:
     https://github.com/unitreerobotics/unitree_legged_sdk/releases/tag/3.3.4
 
-- pygame (for controller UI)
-
 Installation:
 - in ~/catkin_ws/src/
 - git clone the unitree_ros repository
@@ -45,4 +43,15 @@ rosrun a1_description wholebody_kinematics_demo.py
 ```
 
 This script uses the controllers initialised in the normal.launch by unitree and our inverse kinematics model to showcase the translation/rotation of the robots body in all 6 movements axes. 
-For easy and intuitive input we provided a small pygame window to use a joystick GUI.
+For easy and intuitive input we set up a small pygame window to use a joystick GUI.
+
+
+![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnZvbW96OWoyZ3BsMGpmNnh5ZDRqdnE4bmU1aTRyYWFueHByajZ6YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/eOXNwK2yL2ZI6g3NbY/giphy.gif)
+
+
+## Next "Steps"
+We are currently developing scripts to enable locomotion (not flying) of the A1 in Gazebo. A small preview of the crawling gait can be demonstratep using running:
+
+```
+rosrun a1_description gazebo_controller.py
+```
