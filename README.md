@@ -28,6 +28,7 @@ Installation:
 The ROS Pacakge a1_controller consists of the necessary scripts to control the robot in Gazebo.
 - A1_kinematics.py: (direct/inverse) kinematics library. We figured out the kinematic model using the Denavit-Hartenberg-Transformation.
 ![Alt Text](https://i.imgur.com/f0Jjd32.png)
+
 Visualisation of foot workspace and redundant positions (those with multiple viable joint configurations) in blue.
 
 ## Usage:
