@@ -170,7 +170,13 @@ class PoseControllerUI:
         
         t = 0
         tp = Trajectory_Planner()
-        ## Startup sequence:
+        ## initialize display:
+        self.screen.fill((255, 255, 255))
+        self.draw_joystick(self.CENTER1, self.joystick1_pos, (0, 0, 255), "Roll/Move X")
+        self.draw_joystick(self.CENTER2, self.joystick2_pos, (255, 0, 0), "Yaw/Move Z")
+        self.draw_joystick(self.CENTER3, self.joystick3_pos, (0, 255, 0), "Pitch/Move Y")
+        pygame.display.flip()
+
         print("Standing up")
         num_steps = 100
         step = (self.goal_pos - self.startup_pos)/num_steps
