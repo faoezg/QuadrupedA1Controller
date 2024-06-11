@@ -1,0 +1,9 @@
+<launch>
+	<arg name="user_debug" default="false"/>
+	<include file="$(find unitree_gazebo)/launch/normal.launch">
+		<arg name="user_debug" value="$(arg user_debug)" />
+		<arg name="rname" value="a1" />
+	</include>
+	
+	<node pkg="a1_controller" type="wholebody_kinematics_demo.py" name="kinematics_demo_node" 			output="screen" />
+</launch>
