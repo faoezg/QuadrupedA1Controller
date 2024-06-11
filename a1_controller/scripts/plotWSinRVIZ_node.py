@@ -7,6 +7,8 @@ from sensor_msgs.msg import PointCloud
 from geometry_msgs.msg import Point32
 from A1_kinematics import get_pw, calc_joint_angles
 
+leg_offset_y = 0.1805
+leg_offset_x = 0.047
 
 def publish_pointcloud(posAndSolList, name):
     rospy.init_node('pointcloud_publisher', anonymous=True)
@@ -15,7 +17,8 @@ def publish_pointcloud(posAndSolList, name):
     try:
         pointcloud_msg = PointCloud()
         pointcloud_msg.header.stamp = rospy.Time.now()
-        pointcloud_msg.header.frame_id = 'FL_hip' 
+        pointcloud_msg.header.frame_id = 'base' # 'FL_hip', use base instead of hip because hip movement and pointcloud orientation
+                                                #  should be independent
 
         for position in posAndSolList:
             # Word coordinates and DH coordinates are transformed
@@ -26,6 +29,10 @@ def publish_pointcloud(posAndSolList, name):
             ])
                 
             position_rviz = position @ rot_dh_rviz
+            
+            position_rviz[0] += leg_offset_y  # shift from base to FL_hip
+            position_rviz[1] += leg_offset_x
+            
             point = Point32(*[p for p in position_rviz])
 
             pointcloud_msg.points.append(point)
