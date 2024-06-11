@@ -132,7 +132,7 @@ class A1Controller:
                 # set goal angles for corresponding leg
                 self.goal_pos[legIdx*3] = goal_ths[2]
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
-                self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2     
+                self.goal_pos[legIdx*3 + 2] = goal_ths[1]     
                          
             for i in range(0, len(joint_names)):
                 motor_command.q = self.goal_pos[i]

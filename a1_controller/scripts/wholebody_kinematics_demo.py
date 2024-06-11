@@ -233,8 +233,7 @@ class PoseControllerUI:
                 # set goal angles for corresponding leg
                 self.goal_pos[legIdx*3] = goal_ths[2]
                 self.goal_pos[legIdx*3 + 1] = goal_ths[0]
-                self.goal_pos[legIdx*3 + 2] = goal_ths[1] + np.pi/2
-            
+                self.goal_pos[legIdx*3 + 2] = goal_ths[1] 
             # update the overall amount for each angle
             self.yaw += yaw_error
             self.pitch += pitch_error

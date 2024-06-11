@@ -15,7 +15,7 @@ th3_max = -0.92
 th3_min = -2.69
 
 def get_pw(th0, th2, th3, isLeft = True):  # returns end-effector position relative to hip joint
-    #a0 = 0.0838
+    a0 = 0.0838
     a0 = -1*a0 if isLeft == True else a0
 
     px = a0 * np.cos(th0) + np.sin(th0) * (a2 * np.sin(th2) + a3 * np.sin(th2 + th3))
@@ -99,7 +99,6 @@ def calc_joint_angles(position,isLeft=True):
         if th0_min <= ts[0] <= th0_max and th2_min <= ts[1] <= th2_max and th3_min <= ts[2] <= th3_max:        
             fitting_ths.append(ts)
             
-    #print(f"Correct solutions: {len(fitting_ths)}, Th0s: {th0s}, y-pos: {position[1]}")
     return fitting_ths
 
 
@@ -118,6 +117,7 @@ def calc_correct_thetas(position, prev_ths, isLeft):
             min_val = difference
             min_at = i
 
+    possible_joint_angles[min_at][1] += np.pi/2  # only difference between DH Angles and MotorEncoders is this offset.
     return possible_joint_angles[min_at]
 
 
