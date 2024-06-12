@@ -51,10 +51,9 @@ class A1Controller:
                                   -2.022709353102668, -0.27597424214704613, 1.147731458008173, 
                                   -1.8309775156913535, -0.2575122107675636, 0.9668397173376384])  # start of walking loop pose
         
-        self.startup_pos = np.array([-2.6965310400372937, 0.49888734456542494, 1.120544218976467, 
-                                    -2.6965319796256715, -0.4970180265271118, 1.1206134112047828, 
-                                    -2.696527603682461, 0.4957650374287921, 1.1204999226739023, 
-                                    -2.69653004841636, -0.49384031828850805, 1.1206527911125832])  # lying down pose
+        # receive first message to set the starting position
+        first_pos = rospy.wait_for_message("/a1_gazebo/joint_states",JointState,2)
+        self.startup_pos =  np.array(first_pos.position) # pose when starting controller
         
         self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
                                [0.0838, 0.225, 0.0],  # FR

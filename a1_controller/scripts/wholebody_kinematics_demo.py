@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# DEMO Script for Wholebodykinematics in Gazebo
+
 import pygame
 import numpy as np
 import rospy
@@ -62,18 +65,18 @@ class PoseControllerUI:
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
         self.rate = rospy.Rate(25)
         
-        self.positions = np.array([0,0,0,0,0,0,
-                                   0,0,0,0,0,0])
+        self.positions = []
         
         self.goal_pos = np.array([-1.9583591983757351, -0.0007974578255129927, 0.9794434592400876, 
                                   -1.9580158278760527, 0.00048751519737599835, 0.97896869674112, 
                                   -1.968766039552742, 0.0005508150816577739, 0.9651295186701967, 
-                                  -1.968942195136563, 0.0002753686771956865, 0.9639652783917043])
+                                  -1.968942195136563, 0.0002753686771956865, 0.9639652783917043])  # standing configuration
         
-        self.startup_pos = np.array([-2.6965310400372937, 0.49888734456542494, 1.120544218976467, 
-                                    -2.6965319796256715, -0.4970180265271118, 1.1206134112047828, 
-                                    -2.696527603682461, 0.4957650374287921, 1.1204999226739023, 
-                                    -2.69653004841636, -0.49384031828850805, 1.1206527911125832]) 
+        # receive first message to set the starting position
+        first_pos = rospy.wait_for_message("/a1_gazebo/joint_states",JointState,2)
+        self.startup_pos =  np.array(first_pos.position)
+
+
         self.base_height = 0.225
         self.base_width = -0.0838
         self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
@@ -84,10 +87,9 @@ class PoseControllerUI:
         self.slider_height  = self.height = self.hip_to_toe_pos[0][1]
         self.slider_width = self.width = self.hip_to_toe_pos[0][0]
         self.slider_length = self.length = self.hip_to_toe_pos[0][2]
-        self.slider_yaw = self.yaw = 0.0  # overall yaw
-                
+        
+        self.slider_yaw = self.yaw = 0.0       
         self.slider_pitch = self.pitch = 0.0  
-    
         self.slider_roll = self.roll = 0.0 
          
 
