@@ -53,6 +53,10 @@ If you were now to apply the instructions and provided nodes from Unitree...
 ```
 rosrun a1_description wholebody_kinematics_demo.py
 ```
+and
+```
+rosrun a1_description pose_pub_gui.py
+```
 
 This script uses the controllers initialized in the normal.launch by Unitree and our inverse kinematics model to showcase the translation/rotation of the robot's body in all 6 movement axes. 
 We set up a small Pygame window to use a joystick GUI for easy and intuitive input.
