@@ -34,7 +34,8 @@ class PoseController:
         rospy.init_node('move_publisher', anonymous=True)
         rospy.Subscriber("/a1_gazebo/joint_states", JointState, self.joint_states_callback)
         rospy.Subscriber("/goal_pose", Pose, self.goal_pos_callback)
-        self.rate = rospy.Rate(500)
+        self.freq = 500
+        self.rate = rospy.Rate(self.freq)
         
         self.positions = []
         
@@ -81,11 +82,11 @@ class PoseController:
         motor_command.Kp = Kp
         motor_command.Kd = Kd 
         
-        t = 0
         tp = Trajectory_Planner()
         
         print("Standing up")
-        num_steps = 100
+        num_steps = self.freq  # one sec to stand up at the start
+        
         step = (self.goal_pos - self.startup_pos)/num_steps
         
         for i in range(num_steps):
@@ -100,12 +101,12 @@ class PoseController:
         while not rospy.is_shutdown():
             
             # calculate error for each joystick value to current value
-            roll_error = (self.goal_roll - self.roll)/10
-            yaw_error = (self.goal_yaw - self.yaw)/10    # dividing by 10 to smoothen the movement
-            pitch_error = (self.goal_pitch - self.pitch)/10
-            height_error = (self.goal_height -  self.height)/10
-            length_error = (self.goal_length - self.length)/10
-            width_error = (self.goal_width - self.width)/10
+            roll_error = (self.goal_roll - self.roll)/100
+            yaw_error = (self.goal_yaw - self.yaw)/100  # dividing by 15 to smoothen the movement
+            pitch_error = (self.goal_pitch - self.pitch)/100
+            height_error = (self.goal_height -  self.height)/100
+            length_error = (self.goal_length - self.length)/100
+            width_error = (self.goal_width - self.width)/100
             
             # ROS CONTROL LOOP
             for legIdx in range(0,4):                
@@ -152,10 +153,8 @@ class PoseController:
             # send joint commands    
             for i in range(0, len(self.publishers)):
                 motor_command.q = self.goal_pos[i]
-                self.publishers[i].publish(motor_command)  
-
-            t+=1
-            t %= 100    
+                self.publishers[i].publish(motor_command)   
+                
                 
             self.rate.sleep()
             

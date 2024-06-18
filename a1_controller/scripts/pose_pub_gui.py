@@ -6,7 +6,7 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import Pose
 
-class PosePubUI:
+class PosePubGUI:
     def __init__(self, width=400, height=300):
         pygame.init()
         pygame.font.init()
@@ -40,7 +40,7 @@ class PosePubUI:
         self.active_joystick3 = False
         
         # init ROS and Robots Positions:
-        rospy.init_node('pose_publisher_ui', anonymous=True)
+        rospy.init_node('pose_publisher_gui', anonymous=True)
         self.pose_publisher = rospy.Publisher("/goal_pose", Pose, queue_size=1)
         self.rate = rospy.Rate(25)
         
@@ -98,7 +98,7 @@ class PosePubUI:
                 if self.active_joystick1:
                     self.joystick1_pos = self.get_joystick_position(self.CENTER1, event.pos)
                     self.slider_roll = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/2
-                    self.slider_length = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/10
+                    self.slider_length = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))/20
                     
                 elif self.active_joystick2:
                     self.joystick2_pos = self.get_joystick_position(self.CENTER2, event.pos)
@@ -134,7 +134,7 @@ class PosePubUI:
             pose_msg.position.z = self.slider_length
             pose_msg.orientation.x = self.slider_roll  # These are all euler angles because -
             pose_msg.orientation.y = self.slider_pitch  # converting back and forth leaves annoying - 
-            pose_msg.orientation.z = self.slider_yaw  # edge cases ^^
+            pose_msg.orientation.z = self.slider_yaw  # edge cases 
             pose_msg.orientation.w = 0
             self.pose_publisher.publish(pose_msg)
              
@@ -154,5 +154,5 @@ class PosePubUI:
 
 
 if __name__ == "__main__":
-    controller = PosePubUI()
+    controller = PosePubGUI()
     controller.run()
