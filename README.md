@@ -1,7 +1,7 @@
 
 # QuadrupedA1Controller
 
-A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot
+A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot. This branch uses ROS Noetic with Gazebo Classic.
 ## Installation
 
 
