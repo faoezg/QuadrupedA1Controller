@@ -30,7 +30,7 @@ This script uses the Gazebo Sim Plugins for PID Control and our inverse kinemati
 We set up a small Pygame window to use a joystick GUI for easy and intuitive input.
 
 
-![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnZvbW96OWoyZ3BsMGpmNnh5ZDRqdnE4bmU1aTRyYWFueHByajZ6YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/eOXNwK2yL2ZI6g3NbY/giphy.gif)
+![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDgwZDV5MG5sa2V5cGNrNDV1YXhmMHJscjZkNHBpd3RzMHY1Znp1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Zwn2wgBUeAppXXqY6Q/giphy.gif)
 
 The Gazebo environment and the kinematics demo can be launched using:
 ```

@@ -77,8 +77,10 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.01 0.01 0.01 1</ambient>
+          <diffuse>0.01 0.01 0.01 1</diffuse>
+          <specular>0 0 0 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <visual name='base_fixed_joint_lump__imu_link_visual_2'>
@@ -172,12 +174,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
     </link>
@@ -246,12 +246,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -340,8 +338,10 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <visual name='FL_calf_fixed_joint_lump__FL_foot_visual_1'>
@@ -352,12 +352,10 @@
           </sphere>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -435,12 +433,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
     </link>
@@ -509,12 +505,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -603,8 +597,10 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <visual name='FR_calf_fixed_joint_lump__FR_foot_visual_1'>
@@ -615,12 +611,10 @@
           </sphere>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -698,12 +692,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
     </link>
@@ -772,12 +764,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -866,8 +856,10 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <visual name='RL_calf_fixed_joint_lump__RL_foot_visual_1'>
@@ -878,12 +870,10 @@
           </sphere>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -961,12 +951,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
     </link>
@@ -1035,12 +1023,10 @@
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
@@ -1129,8 +1115,10 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <visual name='RR_calf_fixed_joint_lump__RR_foot_visual_1'>
@@ -1141,12 +1129,10 @@
           </sphere>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/DarkGrey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
-          <diffuse>1 0.529412 0.0490196 1</diffuse>
-          <ambient>1 0.529412 0.0490196 1</ambient>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
         </material>
       </visual>
       <self_collide>true</self_collide>
