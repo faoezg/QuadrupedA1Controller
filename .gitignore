@@ -1,5 +1,2 @@
 .vscode/settings.json
 .vscode/c_cpp_properties.json
-a1_controller/scripts/__pycache__/A1_kinematics.cpython-38.pyc
-a1_controller/scripts/__pycache__/Trajectory_Planner.cpython-38.pyc
-a1_controller/scripts/__pycache__/
