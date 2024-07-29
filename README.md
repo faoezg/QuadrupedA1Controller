@@ -1,64 +1,32 @@
 
 # QuadrupedA1Controller
 
-A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot
+A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot using ROS2 Humble and Gazebo Sim Fortress
 ## Installation
 
 
 Important Packages:
-- unitree_ros: 
-    https://github.com/unitreerobotics/unitree_ros.git
-
-- unitree_ros_to_real:
-    https://github.com/unitreerobotics/unitree_ros_to_real.git
-
-- unitree_legged_sdk v3.3.4:
-    https://github.com/unitreerobotics/unitree_legged_sdk/releases/tag/3.3.4
 - a recent version of Pygame
 
 Installation:
-- in ~/catkin_ws/src/
-- git clone the unitree_ros repository
-- inside unitree_ros: copy contents of unitree_ros_to_real into the corresponding folder
-- download unitree_legged_sdk v3.3.4, unzip and place the SDK where it belongs in unitree_ros_to_real
+- in /ros2_ws/src
 - git clone this repository
-- build the packages (catkin_make / catkin build)
+- build the packages using colcon 
 
 ## Overview:
-The ROS Package a1_controller consists of the necessary scripts to control the robot in Gazebo.
-- A1_kinematics.py: (direct/inverse) kinematics library. We figured out the kinematic model using the Denavit-Hartenberg-Transformation.
+The ROS Package a1_controller consists of the necessary scripts to control the robot in the new Gazebo Sim.
+Our project structure is based on the [ros_gz_project_template](https://github.com/gazebosim/ros_gz_project_template).
+- ros_gz_a1_bringup: launch/config files to start the simulation and ros2 bridge
+- ros_gz_a1_controller: kinematics library and ros nodes to control the robot
+- ros_gz_a1_description: Unitree A1 .sdf file and meshes
+- ros_gz_a1_gazebo: World description files for Gazebo Sim
+
 ![Alt Text](https://i.imgur.com/f0Jjd32.png)
 
 The Above image is a visualization of the foot workspace and redundant positions (those with multiple viable joint configurations colored in blue) in RViz using Pointclouds.
-If you want to play around with the foot workspace you can launch:
-```
-roslaunch a1_controller visualize_workspace.launch
-```
 
 ## Usage:
-Launch gazebo simulation and low-level controllers (for motorCMD message):
-
-```
-roslaunch unitree_gazebo normal.launch rname:=a1
-```
-
-If you were now to apply the instructions and provided nodes from Unitree...
-
-![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExa3VyejJtYjhxOGlwejRmaWU3ZDdmY2tzNWRlNTJqYTNhODRneDZvdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WuXrsGJsW7vYuUkg8t/giphy.gif)
-
-...there's either standing still or flying around the origin.
-
-## Run an actual controller (ours):
-
-```
-rosrun a1_description wholebody_kinematics_demo.py
-```
-and
-```
-rosrun a1_description pose_pub_gui.py
-```
-
-This script uses the controllers initialized in the normal.launch by Unitree and our inverse kinematics model to showcase the translation/rotation of the robot's body in all 6 movement axes. 
+This script uses the Gazebo Sim Plugins for PID Control and our inverse kinematics model to showcase the translation/rotation of the robot's body in all 6 movement axes. 
 We set up a small Pygame window to use a joystick GUI for easy and intuitive input.
 
 
@@ -66,14 +34,14 @@ We set up a small Pygame window to use a joystick GUI for easy and intuitive inp
 
 The Gazebo environment and the kinematics demo can be launched using:
 ```
-roslaunch a1_controller wholebody_kinematics_demo.launch
+ros2 launch ros_gz_a1_bringup a1_gazebo_sim.launch.py
+```
+then
+```
+ros2 run ros_gz_a1_controller joint_state_publisher
+```
+and
+```
+ros2 run ros_gz_a1_controller pose_pub_gui
 ```
 
-
-
-## Next "Steps"
-We are developing scripts to enable the locomotion (not flying) of the A1 in Gazebo. A small preview of the crawling gait can be demonstrated by running:
-
-```
-rosrun a1_description gazebo_controller.py
-```
