@@ -21,11 +21,11 @@ def generate_launch_description():
     pkg_project_description = get_package_share_directory('ros_gz_a1_description')
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
 
-    """# Load the SDF file from "description" package                    
-        sdf_file  =  os.path.join(pkg_project_description, 'models', 'a1_ign', 'model.sdf')
-        with open(sdf_file, 'r') as infp:
-            robot_desc = infp.read()
-    """
+    # Load the SDF file from "description" package                    
+    sdf_file  =  os.path.join(pkg_project_description, 'models', 'double_pendulum', 'model.sdf')
+    with open(sdf_file, 'r') as infp:
+        robot_desc = infp.read()
+    
     # Setup to launch the simulator and Gazebo world
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -38,7 +38,7 @@ def generate_launch_description():
     )
 
     # Takes the description and joint angles as inputs and publishes the 3D poses of the robot links
-    """robot_state_publisher = Node(
+    robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
@@ -47,7 +47,7 @@ def generate_launch_description():
             {'use_sim_time': True},
             {'robot_description': robot_desc}
         ]
-    )"""    
+    )  
 
     # Bridge ROS topics and Gazebo messages for establishing communication
     bridge = Node(
@@ -65,4 +65,5 @@ def generate_launch_description():
         DeclareLaunchArgument('rviz', default_value='true',
                               description='Open RViz (not).'), 
         bridge,
+        robot_state_publisher,
     ])
