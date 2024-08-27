@@ -19,11 +19,12 @@ command_topics = ["/FL_calf_cmd","/FL_hip_cmd","/FL_thigh_cmd",
 
 
 class A1Controller(Node):
-    def __init__(self, width=400, height=300):
+    def __init__(self):
         super().__init__('move_publisher')
 
         # init ROS and Robots Positions:
         self.create_subscription(JointState, "/joint_states", self.joint_states_callback, 10)
+        self.create_subscription(Pose, "/goal_pose", self.goal_pos_callback, 10)
 
         self.freq = 25
         self.timer = self.create_timer(1.0 / self.freq, self.update)
@@ -50,7 +51,7 @@ class A1Controller(Node):
                                [0.0838, 0.225, 0.0]]  # RR
 
 
-        self.yaw = self.pitch = self.roll = 0.0
+        self.goal_yaw = self.yaw = self.pitch = self.roll = 0.0
         self.x_shift = 0.06
 
         self.global_positions = [[0, 0, 0],
@@ -81,10 +82,11 @@ class A1Controller(Node):
             time.sleep(1.0/self.freq)
         
     def update(self):
+        yaw_error = (self.goal_yaw - self.yaw)/15  # dividing by 15 to smoothen the movement
         ## Movement Loop
         for legIdx in range(0,4):
             # calculate next step:
-            self.hip_to_toe_pos[legIdx] = self.tp.big_steppa(legIdx, self.hip_to_toe_pos[legIdx], 0.07, 0.1, self.freq*4, self.t)
+            self.hip_to_toe_pos[legIdx] = self.tp.big_steppa(legIdx, self.hip_to_toe_pos[legIdx], 0.05, 0.1, self.freq*4, self.t)
             
             # calculate global positions (base to foot)
             self.global_positions[legIdx] = self.tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
@@ -93,7 +95,7 @@ class A1Controller(Node):
             self.global_positions[legIdx] = self.tp.apply_rpy(self.global_positions[legIdx][0], 
                                                       self.global_positions[legIdx][1], 
                                                       self.global_positions[legIdx][2], 
-                                                      self.roll, self.pitch, self.yaw)
+                                                      self.roll, self.pitch, yaw_error)
             
             # set new local position (hip to foot)
             self.hip_to_toe_pos[legIdx] = self.tp.local_foot_pos(legIdx,self.global_positions[legIdx])
@@ -112,7 +114,9 @@ class A1Controller(Node):
             self.goal_pos[legIdx*3] = goal_ths[2]
             self.goal_pos[legIdx*3 + 1] = goal_ths[0]
             self.goal_pos[legIdx*3 + 2] = goal_ths[1]     
-                         
+
+        self.yaw += yaw_error
+
         # send joint commands
         for i in range(len(self.pubs)):
             self.motor_command.data = self.goal_pos[i]
@@ -126,24 +130,14 @@ class A1Controller(Node):
         self.positions = data.position
         self.velocities = data.velocity
     
-    def imu_callback(self, data):
-        quaternion = [data.orientation.w,
-                      data.orientation.x, 
-                      data.orientation.y, 
-                      data.orientation.z]
-        
-        #euler_orientation = transformations.euler_from_quaternion(quaternion)
-        
-        #self.current_roll = euler_orientation[2]
-        #self.current_pitch = euler_orientation[1]
-        #self.current_yaw = euler_orientation[0] + np.pi
-        
-        
-        #self.pitch = -self.current_pitch/100
-        #self.roll = self.current_roll/100
-        #self.yaw = -self.current_yaw
-        #print(f"Angles: \n {euler_orientation} \n_________________________________________________________")
+    def goal_pos_callback(self, msg):
+        self.goal_width = msg.position.x
+        self.goal_height = msg.position.y
+        self.goal_length = msg.position.z
 
+        self.goal_roll = msg.orientation.x
+        self.goal_pitch = msg.orientation.y
+        self.goal_yaw = msg.orientation.z
 
 def main(args=None):
     rclpy.init(args=args)
