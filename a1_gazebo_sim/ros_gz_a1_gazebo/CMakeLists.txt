@@ -10,13 +10,16 @@ project(ros_gz_a1_gazebo)
 find_package(ament_cmake REQUIRED)
 find_package(ros_gz_a1_description REQUIRED)
 
-find_package(ignition-cmake2 REQUIRED)
-find_package(ignition-plugin1 REQUIRED COMPONENTS register)
-set(GZ_PLUGIN_VER ${ignition-plugin1_VERSION_MAJOR})
-find_package(ignition-common4 REQUIRED COMPONENTS profiler)
-set(GZ_COMMON_VER ${ignition-common4_VERSION_MAJOR})
-find_package(ignition-gazebo6 REQUIRED)
-set(GZ_SIM_VER ${ignition-gazebo6_VERSION_MAJOR})
+find_package(gz-cmake3 REQUIRED)
+find_package(gz-plugin2 REQUIRED COMPONENTS register)
+set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
+find_package(gz-common5 REQUIRED COMPONENTS profiler)
+set(GZ_COMMON_VER ${gz-common5_VERSION_MAJOR})
+
+
+find_package(gz-sim8 REQUIRED)
+  set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
+  message(STATUS "Compiling against Gazebo Harmonic")
 
 # Following 'add_library' directive defines a library target named 'BasicSystem'.
 # The 'SHARED' keyword indicates that a shared library should be compiled, and

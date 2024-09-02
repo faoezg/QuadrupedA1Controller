@@ -1,7 +1,7 @@
 
 # QuadrupedA1Controller
 
-A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot using ROS2 Humble and Gazebo Sim Fortress
+A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot using ROS2 Jazzy and Gazebo Sim Harmonic
 ## Installation
 
 
