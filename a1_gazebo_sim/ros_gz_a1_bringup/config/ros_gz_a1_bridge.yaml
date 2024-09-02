@@ -24,6 +24,26 @@
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
   direction: GZ_TO_ROS
+- ros_topic_name: "/forces/FL_contact_force"
+  gz_topic_name: "/world/demo/model/a1_ign/link/FL_calf/sensor/contact_sensor_FL/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS  
+- ros_topic_name: "/forces/FR_contact_force"
+  gz_topic_name: "/world/demo/model/a1_ign/link/FR_calf/sensor/contact_sensor_FR/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS  
+- ros_topic_name: "/forces/RL_contact_force"
+  gz_topic_name: "/world/demo/model/a1_ign/link/RL_calf/sensor/contact_sensor_RL/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS  
+- ros_topic_name: "/forces/RR_contact_force"
+  gz_topic_name: "/world/demo/model/a1_ign/link/RR_calf/sensor/contact_sensor_RR/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS  
 - ros_topic_name: "/FL_hip_cmd"
   gz_topic_name: "FL_hip_cmd"
   ros_type_name: "std_msgs/msg/Float64"

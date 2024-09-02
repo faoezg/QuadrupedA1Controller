@@ -369,6 +369,13 @@
       </visual>
       <self_collide>true</self_collide>
       <self_collide>true</self_collide>
+
+      <sensor name="contact_sensor_FL" type="contact">
+        <contact>
+            <collision>FL_calf_fixed_joint_lump__FL_foot_collision_1</collision>
+        </contact>
+      </sensor>
+
     </link>
     <joint name='FR_hip_joint' type='revolute'>
       <pose relative_to='base'>0.1805 -0.047 0 0 0 0</pose>
@@ -628,6 +635,13 @@
       </visual>
       <self_collide>true</self_collide>
       <self_collide>true</self_collide>
+
+      <sensor name="contact_sensor_FR" type="contact">
+        <contact>
+            <collision>FR_calf_fixed_joint_lump__FR_foot_collision_1</collision>
+        </contact>
+      </sensor>
+
     </link>
     <joint name='RL_hip_joint' type='revolute'>
       <pose relative_to='base'>-0.1805 0.047 0 0 0 0</pose>
@@ -887,6 +901,13 @@
       </visual>
       <self_collide>true</self_collide>
       <self_collide>true</self_collide>
+
+      <sensor name="contact_sensor_RL" type="contact">
+        <contact>
+            <collision>RL_calf_fixed_joint_lump__RL_foot_collision_1</collision>
+        </contact>
+      </sensor>
+
     </link>
     <joint name='RR_hip_joint' type='revolute'>
       <pose relative_to='base'>-0.1805 -0.047 0 0 0 0</pose>
@@ -1146,6 +1167,13 @@
       </visual>
       <self_collide>true</self_collide>
       <self_collide>true</self_collide>
+
+      <sensor name="contact_sensor_RR" type="contact">
+        <contact>
+            <collision>RR_calf_fixed_joint_lump__RR_foot_collision_1</collision>
+        </contact>
+      </sensor>
+
     </link>
     <frame name='imu_joint' attached_to='trunk'>
       <pose>0 0 0 0 -0 0</pose>
