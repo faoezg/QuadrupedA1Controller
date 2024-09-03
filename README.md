@@ -1,7 +1,7 @@
 
 # QuadrupedA1Controller
 
-A collection of Python scripts to handle the kinematics of the Unitree A1 Quadruped robot using ROS2 Jazzy and Gazebo Sim Harmonic
+A collection of ROS2 Packages to handle the simulation of the Unitree A1 Quadruped robot using ROS2 Jazzy and Gazebo Sim Harmonic. This repository includes everthing necessary (IMU-/ Contact-Sensors, ROS2 Interface, ...) to simulate and control the robot using joint space commands. High level control (like locomotion) is currently under development.
 ## Installation
 
 
