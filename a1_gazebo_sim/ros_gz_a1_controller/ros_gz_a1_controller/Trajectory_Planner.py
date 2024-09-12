@@ -56,6 +56,46 @@ class Trajectory_Planner:
                 
         return [x, y, z]
     
+    def step_on_spot(self, legIdx,position, step_height, T_period, t):
+        # -positioon: current x,y,z coordinates
+        # -step height: adjusts movement in Y direction (up/down)
+        # -step_length: adjusts movement in Z direction (forward/backward)
+        # -T_period: duration of one step
+        # -T_stand: duration of stand phase
+        # -t: current time
+
+        # legIdx: 0 = FL, 1 = FR, 2 = RL, 3 = RR
+
+        x = position[0]
+        y = position[1]
+        z = position[2]
+        T_swing = 1/6 * T_period
+        T_stand = 3/6 * T_period
+        global_t = t
+        
+        if legIdx == 2:
+            t += 1/6 * T_period
+            t %= T_period
+            
+        if legIdx == 0:
+            t += 2/6* T_period
+            t %= T_period
+        
+        if legIdx == 3:
+            t += 4/6 * T_period
+            t %= T_period 
+            
+        if legIdx == 1:
+            t += 5/6 * T_period
+            t %= T_period 
+
+        if legIdx == 2:
+            if T_stand <= t < T_stand + T_swing:
+                u = t - T_stand
+                # movement in y direction according to sin, + movement forward
+                y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.275 # <- base height!        
+        return [x, y, z]
+    
     
     def global_foot_pos(self, id, position):  # calculates the foot position in reference to the base link of the quadruped
 
