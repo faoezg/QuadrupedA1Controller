@@ -59,7 +59,6 @@ class Trajectory_Planner:
     def step_on_spot(self, legIdx,position, step_height, T_period, t):
         # -positioon: current x,y,z coordinates
         # -step height: adjusts movement in Y direction (up/down)
-        # -step_length: adjusts movement in Z direction (forward/backward)
         # -T_period: duration of one step
         # -T_stand: duration of stand phase
         # -t: current time
@@ -71,7 +70,6 @@ class Trajectory_Planner:
         z = position[2]
         T_swing = 1/6 * T_period
         T_stand = 3/6 * T_period
-        global_t = t
         
         if legIdx == 2:
             t += 1/6 * T_period
