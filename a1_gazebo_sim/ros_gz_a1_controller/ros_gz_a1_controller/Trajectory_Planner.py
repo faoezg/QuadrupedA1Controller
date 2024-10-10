@@ -91,7 +91,7 @@ class Trajectory_Planner:
             if T_stand <= t < T_stand + T_swing:
                 u = t - T_stand
                 # movement in y direction according to sin, + movement forward
-                y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.275 # <- base height!        
+                y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225 # <- base height!        
         return [x, y, z]
     
     

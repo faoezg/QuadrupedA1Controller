@@ -58,10 +58,10 @@ class StandController(Node):
 
         self.base_height = 0.225
         self.base_width = -0.0838
-        self.hip_to_toe_pos = [[-0.0838, 0.275, 0.0],  # FL
-                               [0.0838, 0.275, 0.0],  # FR
-                               [-0.0838, 0.275, 0.0],  # RL
-                               [0.0838, 0.275, 0.0]]  # RR
+        self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
+                               [0.0838, 0.225, 0.0],  # FR
+                               [-0.0838, 0.225, 0.0],  # RL
+                               [0.0838, 0.225, 0.0]]  # RR
 
         self.height = self.hip_to_toe_pos[0][1]
         self.width = self.hip_to_toe_pos[0][0]
@@ -159,7 +159,6 @@ class StandController(Node):
     def FL_contact_callback(self, msg):
         z_force = msg.contacts[0].wrenches[0].body_1_wrench.force.z
         self.contacts[0] = [z_force, 1 if z_force > 0 else 0]
-        print(z_force)
     
     def FR_contact_callback(self, msg):
         z_force = msg.contacts[0].wrenches[0].body_1_wrench.force.z

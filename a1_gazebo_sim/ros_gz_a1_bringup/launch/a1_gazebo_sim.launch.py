@@ -11,6 +11,7 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 from launch_ros.actions import Node
 
+use_force_ctrl = False
 
 def generate_launch_description():
     # Configure ROS nodes for launch
@@ -33,7 +34,7 @@ def generate_launch_description():
         launch_arguments={'gz_args': PathJoinSubstitution([
             pkg_project_gazebo,
             'worlds',
-            'empty_a1.sdf'
+            'empty_a1_force_ctrl.sdf' if use_force_ctrl else 'empty_a1.sdf'
         ])}.items(),
     )
 
