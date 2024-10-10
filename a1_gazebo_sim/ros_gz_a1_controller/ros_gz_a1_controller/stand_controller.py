@@ -8,8 +8,8 @@ from sensor_msgs.msg import JointState, Imu
 from ros_gz_interfaces.msg import Contacts
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Float64
-from . import A1_kinematics
-from .Trajectory_Planner import Trajectory_Planner
+from .lib import A1_kinematics
+from .lib.Trajectory_Planner import Trajectory_Planner
 import time
 
 
