@@ -97,7 +97,7 @@ class PoseController(Node):
     def update(self):
         # calculate error for each joystick value to current value
         roll_error = (self.goal_roll - self.roll) / 100
-        yaw_error = (self.goal_yaw - self.yaw) / 100  # dividing by 15 to smoothen the movement
+        yaw_error = (self.goal_yaw - self.yaw) / 100  # dividing to smoothen the movement
         pitch_error = (self.goal_pitch - self.pitch) / 100
         height_error = (self.goal_height - self.height) / 100
         length_error = (self.goal_length - self.length) / 100
