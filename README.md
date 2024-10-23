@@ -1,7 +1,7 @@
 
 # QuadrupedA1Controller
 
-A collection of ROS2 Packages to handle the simulation of the Unitree A1 Quadruped robot using ROS2 Jazzy and Gazebo Sim Harmonic. This repository includes everthing necessary (IMU-/ Contact-Sensors, ROS2 Interface, ...) to simulate and control the robot using joint space commands. High level control (like locomotion) is currently under development.
+A collection of ROS2 Packages to handle the simulation of the Unitree A1 Quadruped robot using ROS2 Jazzy and Gazebo Sim Harmonic. This repository includes everthing necessary (IMU-/ Contact-Sensors, ROS2 Interface, ...) to simulate and control the robot using joint space commands (position or torque). High level control (like locomotion) is currently under development.
 ## Installation
 
 
@@ -46,4 +46,4 @@ and
 ros2 run ros_gz_a1_controller pose_pub_gui
 ```
 
-You can also control the robot using torque commands. To switch between torque/position control add "use_force_ctrl=True"(default is False) when launching the simulation.
+You can also control the robot using torque commands. To switch between torque/position control add "use_force_ctrl=True"(default: False) when launching the simulation.
