@@ -32,11 +32,12 @@ We set up a small Pygame window to use a joystick GUI for easy and intuitive inp
 
 ![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDgwZDV5MG5sa2V5cGNrNDV1YXhmMHJscjZkNHBpd3RzMHY1Znp1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Zwn2wgBUeAppXXqY6Q/giphy.gif)
 
-The Gazebo environment and the kinematics demo can be launched using:
+The Gazebo environment with all necessary control topics can be launched using:
 ```
 ros2 launch ros_gz_a1_bringup a1_gazebo_sim.launch.py
 ```
-then
+
+To use the wholebody kinematics controller run the following two nodes:
 ```
 ros2 run ros_gz_a1_controller joint_state_publisher
 ```
@@ -45,3 +46,4 @@ and
 ros2 run ros_gz_a1_controller pose_pub_gui
 ```
 
+You can also control the robot using torque commands. To switch between torque/position control add "use_force_ctrl=True"(default is False) when launching the simulation.

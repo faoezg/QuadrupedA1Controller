@@ -1,4 +1,5 @@
 import os
+import sys
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -11,11 +12,17 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 from launch_ros.actions import Node
 
-use_force_ctrl = False
 
 def generate_launch_description():
     # Configure ROS nodes for launch
 
+    # handle launch arguments:
+    use_force_ctrl = False
+    for arg in sys.argv:
+        if arg.startswith("use_force_ctrl:="):
+            use_force_ctrl = arg.split(":=")[1] == "True"
+            break
+    
     # Setup project paths
     pkg_project_bringup = get_package_share_directory('ros_gz_a1_bringup')
     pkg_project_gazebo = get_package_share_directory('ros_gz_a1_gazebo')
