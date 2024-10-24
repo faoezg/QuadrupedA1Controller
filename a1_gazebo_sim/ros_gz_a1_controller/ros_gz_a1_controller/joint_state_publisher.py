@@ -46,9 +46,13 @@ class PoseController(Node):
 
         # receive first message to set the starting position
         _,first_pos = wait_for_message(msg_type=JointState, node=self,topic="/joint_states",time_to_wait=5)
+        self.startup_pos = np.zeros(12)
         
-        print(first_pos)
-        self.startup_pos = np.array(first_pos.position)
+        # reformat the message to match the order of the goal_pos
+        for k in range(0,4):
+            self.startup_pos[0 + k*3] = first_pos.position[2 + k*3]
+            self.startup_pos[1 + k*3] = first_pos.position[0 + k*3]
+            self.startup_pos[2 + k*3] = first_pos.position[1 + k*3]
 
         self.base_height = 0.225
         self.base_width = -0.0838
@@ -82,9 +86,11 @@ class PoseController(Node):
 
     def stand_up(self):
         print("Standing up")
+
+        print(self.goal_pos)
+
         num_steps = self.freq  # one sec to stand up at the start
         step = (self.goal_pos - self.startup_pos) / num_steps
-
         for i in range(num_steps):
             for i in range(len(self.pubs)):
                 self.startup_pos[i] += step[i]
