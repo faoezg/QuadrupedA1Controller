@@ -6,7 +6,9 @@ A collection of ROS2 Packages to handle the simulation of the Unitree A1 Quadrup
 
 
 Important Packages:
-- a recent version of Pygame
+- a recent version of Pygame (only for Kinematics Demo GUI, "/pose" topic can also be published via commandline or RQT!)
+- ROS2 Jazzy
+- Gazebo Sim Harmonic (older distributions of Gazebo Sim do not fully support e.g. the Feet Contact Sensors)
 
 Installation:
 - in /ros2_ws/src
