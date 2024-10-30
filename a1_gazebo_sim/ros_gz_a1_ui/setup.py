@@ -21,8 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pose_pub_gui = ros_gz_a1_ui.pose_pub_gui:main',
-            'cmdvel_pub_gui = ros_gz_a1_ui.pose_pub_gui:main',
-
+            'cmdvel_pub_gui = ros_gz_a1_ui.cmd_vel_pub:main',
         ],
     },
 )

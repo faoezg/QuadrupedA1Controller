@@ -42,7 +42,7 @@ class CMDVelPubGUI(Node):
         self.pose_publisher = self.create_publisher(Twist, '/cmd_vel', 10)
         self.timer = self.create_timer(0.04, self.publish_and_update)  # 25 Hz
 
-        self.slider_x_vel, self.slider_y_vel, self.slider_yaw_vel = 0.0       
+        self.slider_x_vel = self.slider_y_vel = self.slider_yaw_vel = 0.0       
 
 
     def draw_joystick(self, center, position, color, label="No Label"):
@@ -78,7 +78,7 @@ class CMDVelPubGUI(Node):
                 self.active_joystick2 = False
                 # reset if slider is let go 
                 
-                self.slider_x_vel, self.slider_y_vel, self.slider_yaw_vel= 0.0
+                self.slider_x_vel = self.slider_y_vel = self.slider_yaw_vel= 0.0
                 self.joystick1_pos = self.CENTER1
                 self.joystick2_pos = self.CENTER2
                 

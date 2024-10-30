@@ -23,6 +23,7 @@ setup(
             'joint_state_publisher = ros_gz_a1_controller.joint_state_publisher:main',
             'crawl_controller = ros_gz_a1_controller.crawl_controller:main',
             'stand_controller = ros_gz_a1_controller.stand_controller:main',
+            'a1_controller = ros_gz_a1_controller.a1_controller:main',
         ],
     },
 )
