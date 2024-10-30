@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'ros_gz_a1_controller'
+package_name = 'ros_gz_a1_ui'
 
 setup(
     name=package_name,
@@ -13,16 +13,16 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='k-dawg',
-    maintainer_email='karsten.appenzeller@stud.uni-due.de',
-    description='TODO: Package description',
-    license='Apache-2.0',
+    maintainer='kdawg',
+    maintainer_email='karsten.appenzeller@gmail.com',
+    description='A collection of ROS2 Nodes to send /pose and /cmd_vel messages using a Pygame GUI',
+    license='Apache 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'joint_state_publisher = ros_gz_a1_controller.joint_state_publisher:main',
-            'crawl_controller = ros_gz_a1_controller.crawl_controller:main',
-            'stand_controller = ros_gz_a1_controller.stand_controller:main',
+            'pose_pub_gui = ros_gz_a1_ui.pose_pub_gui:main',
+            'cmdvel_pub_gui = ros_gz_a1_ui.pose_pub_gui:main',
+
         ],
     },
 )

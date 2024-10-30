@@ -47,7 +47,7 @@ class PoseController(Node):
         # receive first message to set the starting position
         _,first_pos = wait_for_message(msg_type=JointState, node=self,topic="/joint_states",time_to_wait=5)
         self.startup_pos = np.zeros(12)
-        
+
         # reformat the message to match the order of the goal_pos
         for k in range(0,4):
             self.startup_pos[0 + k*3] = first_pos.position[2 + k*3]
@@ -86,9 +86,6 @@ class PoseController(Node):
 
     def stand_up(self):
         print("Standing up")
-
-        print(self.goal_pos)
-
         num_steps = self.freq  # one sec to stand up at the start
         step = (self.goal_pos - self.startup_pos) / num_steps
         for i in range(num_steps):
@@ -98,7 +95,7 @@ class PoseController(Node):
                 self.pubs[i].publish(self.motor_command)
             time.sleep(1.0/self.freq)
 
-        print("Listening to /goal_pose topic")
+        print("Listening to /goal_pose topic. Use the pose_pub_gui node or RQT to publish Pose messages.")
 
     def update(self):
         # calculate error for each joystick value to current value
