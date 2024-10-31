@@ -4,7 +4,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState, Imu
 from ros_gz_interfaces.msg import Contacts
 from std_msgs.msg import Float64
-
+from geometry_msgs.msg import Twist, Quaternion, Vector3
+import numpy as np
 
 command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
                   "/FR_hip_cmd", "/FR_thigh_cmd", "/FR_calf_cmd",
@@ -24,7 +25,14 @@ class A1Controller(Node):
         self.create_subscription(Contacts, "/forces/FR_contact_force", self.FR_contact_callback, 10)
         self.create_subscription(Contacts, "/forces/RL_contact_force", self.RL_contact_callback, 10)
         self.create_subscription(Contacts, "/forces/RR_contact_force", self.RR_contact_callback, 10)
+        self.create_subscription(Twist, "/cmd_vel", self.cmd_vel_callback, 10)
 
+        # Initialize State Variables
+        self.orientation = Quaternion()
+        self.angular_vel = Vector3()
+        self.linear_acc = Vector3()
+        self.positions = [0.0]*12
+        self.velocities = [0.0]*12
 
         self.contacts = [[0, 0],
                          [0, 0],
@@ -32,36 +40,50 @@ class A1Controller(Node):
                          [0, 0]]  # [force, contact (1 or 0)]
         
         # publishers for the joint commands
-
         self.pubs = []
         for topic in command_topics:
             self.pubs.append(self.create_publisher(Float64, topic, 10))  # Create Publisher for each Joint
 
+        # PID Controller Parameters
+        self.kp = 125.0
+        self.kd = 2
 
+        self.desired_theta = [0.0,1.0,-2.0,
+                              0.0,1.0,-2.0,
+                              0.0,1.0,-2.0,
+                              0.0,1.0,-2.0] # initial standing position FL,FR,RL,RR
+        
+        self.cmd_thetas = [0.0]*12
 
         pass
 
     """Main loop of the controller, updates at self.freq"""
     def update(self):
+
+        for i in range(len(self.pubs)):
+            # PID Controller
+            self.cmd_thetas[i] = self.kp * (self.desired_theta[i] - self.positions[i]) - self.kd * self.velocities[i]
+
+            motor_cmd = Float64()
+            motor_cmd.data = self.cmd_thetas[i]
+            self.pubs[i].publish(motor_cmd)
+        
+
+
+    """Calculate PD Controls"""
+    def calculate_pd(self, kp, kd, desired, current, velocity):
         pass
-    
-
-
-
-
-
-
-
-
-
 
     """Callback for the sensor data"""
     def joint_states_callback(self, msg):
         self.positions = msg.position
         self.velocities = msg.velocity
-        print(self.positions)
 
     def imu_callback(self, msg):
+        self.orientation = msg.orientation
+        self.angular_vel = msg.angular_velocity
+        self.linear_acc = msg.linear_acceleration
+
         self.acc_x = msg.linear_acceleration.x
         self.acc_y = msg.linear_acceleration.y
         self.acc_z = msg.linear_acceleration.z
@@ -82,6 +104,11 @@ class A1Controller(Node):
         z_force = msg.contacts[0].wrenches[0].body_1_wrench.force.z
         self.contacts[3] = [z_force, 1 if z_force > 0 else 0]
 
+    def cmd_vel_callback(self, msg):
+        self.linear_cmd_vel = msg.linear
+        self.angular_vel = msg.angular
+        
+    
 
 def main(args=None):
     rclpy.init(args=args)
