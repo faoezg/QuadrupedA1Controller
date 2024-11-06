@@ -156,7 +156,7 @@
       </plugin>
 
 
-    <!-- Rear Right Leg Controller Gazebo Sim Topic-->
+      <!-- Rear Right Leg Controller Gazebo Sim Topic-->
       <plugin
         filename="ignition-gazebo-apply-joint-force-system"
         name="gz::sim::systems::ApplyJointForce">
@@ -174,6 +174,19 @@
         name="gz::sim::systems::ApplyJointForce">
         <joint_name>RR_calf_joint</joint_name>
       </plugin>
+
+      <!-- plugin for odometry -->
+      <plugin
+        name="ignition::gazebo::systems::OdometryPublisher"
+        filename="libignition-gazebo-odometry-publisher-system.so">
+
+      <odom_frame>odom</odom_frame>       
+      <child_frame>base</child_frame> 
+
+      <publish_rate>50</publish_rate>     <!-- Defaults to 20 Hz -->
+      <enable_twist>true</enable_twist>
+      <enable_pose>true</enable_pose>
+    </plugin>
 
     </model>
   </world>

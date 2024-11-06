@@ -104,4 +104,8 @@
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
-  
+- gz_topic_name: /model/a1_ign/odometry
+  ros_topic_name: /a1_ign/odometry
+  gz_type_name: ignition.msgs.Odometry
+  ros_type_name: nav_msgs/msg/Odometry
+  direction: GZ_TO_ROS
