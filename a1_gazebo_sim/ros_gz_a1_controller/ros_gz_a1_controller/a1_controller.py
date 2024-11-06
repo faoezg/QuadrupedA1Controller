@@ -6,6 +6,8 @@ from ros_gz_interfaces.msg import Contacts
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist, Quaternion, Vector3
 import numpy as np
+from .lib.Trajectory_Planner import Trajectory_Planner
+from .lib import A1_kinematics
 
 command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
                   "/FR_hip_cmd", "/FR_thigh_cmd", "/FR_calf_cmd",
@@ -15,11 +17,11 @@ command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
 class A1Controller(Node):
     def __init__(self):
         super().__init__('a1_controller')
-        self.freq = 500
+        self.freq = 25
         self.timer = self.create_timer(1.0 / self.freq, self.update)
     
         # subscribe to the available sensor data
-        self.create_subscription(JointState, "/joint_states", self.joint_states_callback, 10)
+        #self.create_subscription(JointState, "/joint_states", self.joint_states_callback, 10)
         self.create_subscription(Imu, "/imu", self.imu_callback, 10)
         self.create_subscription(Contacts, "/forces/FL_contact_force", self.FL_contact_callback, 10)
         self.create_subscription(Contacts, "/forces/FR_contact_force", self.FR_contact_callback, 10)
@@ -39,45 +41,85 @@ class A1Controller(Node):
                          [0, 0],
                          [0, 0]]  # [force, contact (1 or 0)]
         
-        # publishers for the joint commands
-        self.pubs = []
-        for topic in command_topics:
-            self.pubs.append(self.create_publisher(Float64, topic, 10))  # Create Publisher for each Joint
 
-        # PID Controller Parameters
-        self.kp = 125.0
-        self.kd = 2
-
-        self.desired_theta = [0.0,1.0,-2.0,
-                              0.0,1.0,-2.0,
-                              0.0,1.0,-2.0,
-                              0.0,1.0,-2.0] # initial standing position FL,FR,RL,RR
+        self.desired_theta = [0.,1.,-2.,
+                              -0.,1.,-2.,
+                              0.,1.,-2.,
+                              -0.,1.,-2.] # initial standing position FL,FR,RL,RR
         
-        self.cmd_thetas = [0.0]*12
+        #self.cmd_thetas = [0.0]*12
+        self.pub = self.create_publisher(JointState, "/high_level/joint_cmd", 10)
+        self.msg = JointState()
+        """self.msg.name = ["FL_hip", "FL_thigh", "FL_calf",
+                        "FR_hip", "FR_thigh", "FR_calf",
+                        "RL_hip", "RL_thigh", "RL_calf",
+                        "RR_hip", "RR_thigh", "RR_calf"]"""
+        
+        self.hip_to_toe_pos = [[-0.0838, 0.225, 0.0],  # FL
+                               [0.0838, 0.225, 0.0],  # FR
+                               [-0.0838, 0.225, 0.0],  # RL
+                               [0.0838, 0.225, 0.0]]  # RR
 
+        self.x_shift = 0.06
+        self.goal_yaw = self.yaw = self.pitch = self.roll = 0.0
+
+        self.global_positions = [[0, 0, 0],
+                                 [0, 0, 0],
+                                 [0, 0, 0],
+                                 [0, 0, 0]]
+        
+        self.tp = Trajectory_Planner()
+        self.t = 0
         pass
 
     """Main loop of the controller, updates at self.freq"""
     def update(self):
+        
+        for legIdx in range(0,4):
 
-        for i in range(len(self.pubs)):
-            # PID Controller
-            self.cmd_thetas[i] = self.kp * (self.desired_theta[i] - self.positions[i]) - self.kd * self.velocities[i]
+            # calculate next step:
+            self.hip_to_toe_pos[legIdx] = self.tp.trot(legIdx, self.hip_to_toe_pos[legIdx], 0.03, self.freq*4, self.t)
+            
+            # calculate global positions (base to foot)
+            self.global_positions[legIdx] = self.tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
+            
+            # apply RPY via rotation matrix
+            self.global_positions[legIdx] = self.tp.apply_rpy(self.global_positions[legIdx][0], 
+                                                      self.global_positions[legIdx][1], 
+                                                      self.global_positions[legIdx][2], 
+                                                      self.roll, self.pitch, self.yaw)
+            
+            # set new local position (hip to foot)
+            self.hip_to_toe_pos[legIdx] = self.tp.local_foot_pos(legIdx,self.global_positions[legIdx])
+            
+            # get current leg angles from robot
+            current_ths = [self.positions[legIdx*3 + 0], 
+                           self.positions[legIdx*3 + 1], 
+                           self.positions[legIdx*3 + 2]]
+            
+            # calculate closest solution for next position
+            goal_ths  = A1_kinematics.calc_correct_thetas([self.hip_to_toe_pos[legIdx][0], 
+                                                           self.hip_to_toe_pos[legIdx][1], 
+                                                           self.hip_to_toe_pos[legIdx][2]], current_ths, legIdx % 2 == 0)
+            
+            # set goal angles for corresponding leg
+            self.desired_theta[legIdx*3 + 2] = goal_ths[2]
+            self.desired_theta[legIdx*3] = goal_ths[0]
+            self.desired_theta[legIdx*3 + 1] = goal_ths[1]     
 
-            motor_cmd = Float64()
-            motor_cmd.data = self.cmd_thetas[i]
-            self.pubs[i].publish(motor_cmd)
+
+        
+        self.msg.position = self.desired_theta
+        self.pub.publish(self.msg)
+
+        self.t+=10
+        self.t %= self.freq*4
         
 
-
-    """Calculate PD Controls"""
-    def calculate_pd(self, kp, kd, desired, current, velocity):
-        pass
-
     """Callback for the sensor data"""
-    def joint_states_callback(self, msg):
-        self.positions = msg.position
-        self.velocities = msg.velocity
+    #def joint_states_callback(self, msg):
+    #    self.positions = msg.position
+    #    self.velocities = msg.velocity
 
     def imu_callback(self, msg):
         self.orientation = msg.orientation

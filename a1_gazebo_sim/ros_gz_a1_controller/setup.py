@@ -24,6 +24,7 @@ setup(
             'crawl_controller = ros_gz_a1_controller.crawl_controller:main',
             'stand_controller = ros_gz_a1_controller.stand_controller:main',
             'a1_controller = ros_gz_a1_controller.a1_controller:main',
+            'low_level_controller = ros_gz_a1_controller.low_level_controller:main',
         ],
     },
 )

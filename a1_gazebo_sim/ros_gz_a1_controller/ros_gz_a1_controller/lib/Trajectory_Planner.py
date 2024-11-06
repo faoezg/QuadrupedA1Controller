@@ -90,10 +90,37 @@ class Trajectory_Planner:
         if legIdx == 2:
             if T_stand <= t < T_stand + T_swing:
                 u = t - T_stand
-                # movement in y direction according to sin, + movement forward
+                # movement in y direction according to sin
                 y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225 # <- base height!        
         return [x, y, z]
     
+    def trot(self, legIdx, position, step_height, T_period, t):
+        # -positioon: current x,y,z coordinates
+        # -step height: adjusts movement in Y direction (up/down)
+        # -T_period: duration of one step
+        # -T_stand: duration of stand phase
+        # -t: current time
+
+        # legIdx: 0 = FL, 1 = FR, 2 = RL, 3 = RR
+
+        x = position[0]
+        y = position[1]
+        z = position[2]
+        T_swing = T_period/2
+        T_stand = T_period
+        
+        if legIdx == 3 or legIdx == 0:
+            t += 1/2 * T_period
+        t %= T_period 
+
+        
+        
+        u = t - T_stand
+        # movement in y direction according to sin
+        y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225
+
+        return [x,y,z]
+
     
     def global_foot_pos(self, id, position):  # calculates the foot position in reference to the base link of the quadruped
 
