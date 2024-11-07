@@ -4,10 +4,12 @@ class Trajectory_Planner:
     """Class used to bundle trajectory generation and other helpful
                 functions related to the foot positions""" 
                  
-    def __init__(self) -> None:
+    def __init__(self, base_height=0.225) -> None:
         self.leg_offset_y = 0.1805
         self.leg_offset_x = 0.047
-        
+        self.base_height = base_height
+        self.z_fd = 0.0
+
     def big_steppa(self, legIdx,position, step_height, step_length, T_period, t):
         # -positioon: current x,y,z coordinates
         # -step height: adjusts movement in Y direction (up/down)
@@ -51,75 +53,48 @@ class Trajectory_Planner:
         if T_stand <= t < T_stand + T_swing:
             u = t - T_stand
             # movement in y direction according to sin, + movement forward
-            y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225 # <- base height!
+            y = -step_height * np.sin(np.pi*u/(T_swing-1)) + self.base_height
             z = (step_length) - u*(step_length)/T_swing - step_length/2 + 0.05
                 
         return [x, y, z]
     
-    def step_on_spot(self, legIdx,position, step_height, T_period, t):
-        # -positioon: current x,y,z coordinates
-        # -step height: adjusts movement in Y direction (up/down)
-        # -T_period: duration of one step
-        # -T_stand: duration of stand phase
-        # -t: current time
 
-        # legIdx: 0 = FL, 1 = FR, 2 = RL, 3 = RR
 
-        x = position[0]
-        y = position[1]
-        z = position[2]
-        T_swing = 1/6 * T_period
-        T_stand = 3/6 * T_period
+    import numpy as np
+
+    def trot(self, legIdx, position, step_height, T_period, t, linear_vel=[0,0], command_vel=[0,0], k_z=0.024, k_y=0.0001):
+        x = position[0]   
+        y = position[1]   
+        z = position[2]   
+        desired_vel_z = command_vel[0]  
+        linear_vel_z = linear_vel[0]    
+
+        T_swing = T_period / 2
+        T_stand = T_period / 2
+
+        if legIdx in (0, 3):  # For legs 0 and 3, adjust time offset for trotting
+            t += T_period / 2
+        t %= T_period
+
+        # Raibert heuristic for forward foot placement (z-direction) 
+        if t == 37:
+            self.z_fd = ((linear_vel_z * 0.25) / 2 + k_z * (linear_vel_z - desired_vel_z))
+
+        if t >= T_stand:  # Swing phase
+            u = t - T_stand
+            if np.abs(z) < 0.5:
+                z -= self.z_fd/25
+            else:
+                z = np.sign(z) * 0.5 
+
+            y = -step_height * np.sin(np.pi * u / T_swing) + self.base_height
+        else:  # Stand phase
+
+            y = self.base_height
+            z += self.z_fd/25
         
-        if legIdx == 2:
-            t += 1/6 * T_period
-            t %= T_period
-            
-        if legIdx == 0:
-            t += 2/6* T_period
-            t %= T_period
-        
-        if legIdx == 3:
-            t += 4/6 * T_period
-            t %= T_period 
-            
-        if legIdx == 1:
-            t += 5/6 * T_period
-            t %= T_period 
-
-        if legIdx == 2:
-            if T_stand <= t < T_stand + T_swing:
-                u = t - T_stand
-                # movement in y direction according to sin
-                y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225 # <- base height!        
+        # Return the foot position for the leg
         return [x, y, z]
-    
-    def trot(self, legIdx, position, step_height, T_period, t):
-        # -positioon: current x,y,z coordinates
-        # -step height: adjusts movement in Y direction (up/down)
-        # -T_period: duration of one step
-        # -T_stand: duration of stand phase
-        # -t: current time
-
-        # legIdx: 0 = FL, 1 = FR, 2 = RL, 3 = RR
-
-        x = position[0]
-        y = position[1]
-        z = position[2]
-        T_swing = T_period/2
-        T_stand = T_period
-        
-        if legIdx == 3 or legIdx == 0:
-            t += 1/2 * T_period
-        t %= T_period 
-
-        
-        
-        u = t - T_stand
-        # movement in y direction according to sin
-        y = -step_height * np.sin(np.pi*u/(T_swing-1)) + 0.225
-
-        return [x,y,z]
 
     
     def global_foot_pos(self, id, position):  # calculates the foot position in reference to the base link of the quadruped

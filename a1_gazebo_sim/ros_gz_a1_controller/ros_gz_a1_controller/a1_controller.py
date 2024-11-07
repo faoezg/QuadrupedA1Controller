@@ -1,10 +1,12 @@
 """This script controls the Quadruped A1 in gazebo launched in use_force_ctrl-Mode"""
 import rclpy
+import time
 from rclpy.node import Node
 from sensor_msgs.msg import JointState, Imu
 from ros_gz_interfaces.msg import Contacts
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist, Quaternion, Vector3
+from nav_msgs.msg import Odometry
 import numpy as np
 from .lib.Trajectory_Planner import Trajectory_Planner
 from .lib import A1_kinematics
@@ -17,7 +19,7 @@ command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
 class A1Controller(Node):
     def __init__(self):
         super().__init__('a1_controller')
-        self.freq = 25
+        self.freq = 100
         self.timer = self.create_timer(1.0 / self.freq, self.update)
     
         # subscribe to the available sensor data
@@ -28,6 +30,7 @@ class A1Controller(Node):
         self.create_subscription(Contacts, "/forces/RL_contact_force", self.RL_contact_callback, 10)
         self.create_subscription(Contacts, "/forces/RR_contact_force", self.RR_contact_callback, 10)
         self.create_subscription(Twist, "/cmd_vel", self.cmd_vel_callback, 10)
+        self.create_subscription(Odometry, "/a1_ign/odometry", self.odom_callback, 10)
 
         # Initialize State Variables
         self.orientation = Quaternion()
@@ -60,8 +63,19 @@ class A1Controller(Node):
                                [-0.0838, 0.225, 0.0],  # RL
                                [0.0838, 0.225, 0.0]]  # RR
 
+        self.default_stance = np.array([0,1,-2,
+                               0,1,-2,
+                               0,1,-2,
+                               0,1,-2])
+        
+        self.laying_down = np.array([0.0,2.69,-2.69,
+                               0.0,2.69,-2.69,
+                               0.0,2.69,-2.69,
+                               0.0,2.69,-2.69])
         self.x_shift = 0.06
         self.goal_yaw = self.yaw = self.pitch = self.roll = 0.0
+        self.linear_vel = [0.0, 0.0]
+        self.linear_cmd_vel = [0.0, 0.0]
 
         self.global_positions = [[0, 0, 0],
                                  [0, 0, 0],
@@ -70,6 +84,8 @@ class A1Controller(Node):
         
         self.tp = Trajectory_Planner()
         self.t = 0
+
+        self.stand_up()
         pass
 
     """Main loop of the controller, updates at self.freq"""
@@ -78,8 +94,9 @@ class A1Controller(Node):
         for legIdx in range(0,4):
 
             # calculate next step:
-            self.hip_to_toe_pos[legIdx] = self.tp.trot(legIdx, self.hip_to_toe_pos[legIdx], 0.03, self.freq*4, self.t)
-            
+            self.hip_to_toe_pos[legIdx] = self.tp.trot(legIdx, self.hip_to_toe_pos[legIdx], 0.05, 50, self.t, self.linear_vel, self.linear_cmd_vel)
+            # print(self.hip_to_toe_pos[legIdx])
+            #print(self.t)
             # calculate global positions (base to foot)
             self.global_positions[legIdx] = self.tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
             
@@ -112,9 +129,21 @@ class A1Controller(Node):
         self.msg.position = self.desired_theta
         self.pub.publish(self.msg)
 
-        self.t+=10
-        self.t %= self.freq*4
+        self.t+=1
+        self.t %= 50
         
+    """Start Up Routine"""    
+    def stand_up(self):
+        print("Standing up")
+        num_steps = self.freq  # one sec to stand up at the start
+        step = (self.default_stance - self.laying_down) / num_steps
+        for _ in range(num_steps):
+            self.laying_down += step
+            self.msg.position = self.laying_down
+            self.pub.publish(self.msg)
+            time.sleep(1.0/self.freq)
+
+        time.sleep(1.0)
 
     """Callback for the sensor data"""
     #def joint_states_callback(self, msg):
@@ -147,9 +176,11 @@ class A1Controller(Node):
         self.contacts[3] = [z_force, 1 if z_force > 0 else 0]
 
     def cmd_vel_callback(self, msg):
-        self.linear_cmd_vel = msg.linear
+        self.linear_cmd_vel = [msg.linear.x, msg.linear.y]
         self.angular_vel = msg.angular
-        
+
+    def odom_callback(self, msg):
+        self.linear_vel = [msg.twist.twist.linear.x, msg.twist.twist.linear.y]
     
 
 def main(args=None):
