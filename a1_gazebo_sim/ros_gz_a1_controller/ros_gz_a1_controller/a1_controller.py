@@ -177,6 +177,7 @@ class A1Controller(Node):
 
     def cmd_vel_callback(self, msg):
         self.linear_cmd_vel = [msg.linear.x, msg.linear.y]
+        print(self.linear_cmd_vel)
         self.angular_vel = msg.angular
 
     def odom_callback(self, msg):

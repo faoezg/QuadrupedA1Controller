@@ -9,6 +9,7 @@ class Trajectory_Planner:
         self.leg_offset_x = 0.047
         self.base_height = base_height
         self.z_fd = 0.0
+        self.x_fd = 0.0
 
     def big_steppa(self, legIdx,position, step_height, step_length, T_period, t):
         # -positioon: current x,y,z coordinates
@@ -62,12 +63,14 @@ class Trajectory_Planner:
 
     import numpy as np
 
-    def trot(self, legIdx, position, step_height, T_period, t, linear_vel=[0,0], command_vel=[0,0], k_z=0.024, k_y=0.0001):
+    def trot(self, legIdx, position, step_height, T_period, t, linear_vel=[0,0], command_vel=[0,0], k_z=0.024, k_x=0.024):
         x = position[0]   
         y = position[1]   
         z = position[2]   
         desired_vel_z = command_vel[0]  
         linear_vel_z = linear_vel[0]    
+        desired_vel_x = command_vel[1]  
+        linear_vel_x = linear_vel[1]   
 
         T_swing = T_period / 2
         T_stand = T_period / 2
@@ -76,9 +79,13 @@ class Trajectory_Planner:
             t += T_period / 2
         t %= T_period
 
+        
+
         # Raibert heuristic for forward foot placement (z-direction) 
         if t == 37:
-            self.z_fd = ((linear_vel_z * 0.25) / 2 + k_z * (linear_vel_z - desired_vel_z))
+            self.z_fd = (linear_vel_z * 0.25) / 2 + k_z * (linear_vel_z - desired_vel_z)
+            self.x_fd = (linear_vel_x * 0.25)/ 2 + k_x * (linear_vel_x - desired_vel_x)
+            
 
         if t >= T_stand:  # Swing phase
             u = t - T_stand
@@ -86,13 +93,19 @@ class Trajectory_Planner:
                 z -= self.z_fd/25
             else:
                 z = np.sign(z) * 0.5 
+            
+            if np.abs(x) < 0.5:
+                x -= self.x_fd/25
+            else:
+                x = np.sign(x) * 0.3
 
             y = -step_height * np.sin(np.pi * u / T_swing) + self.base_height
         else:  # Stand phase
 
             y = self.base_height
             z += self.z_fd/25
-        
+            x += self.x_fd/25
+
         # Return the foot position for the leg
         return [x, y, z]
 
