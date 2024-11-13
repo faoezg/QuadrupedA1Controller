@@ -1,4 +1,5 @@
 import numpy as np
+from .bezier import bezier_curve, get_control_points
 
 class Trajectory_Planner:  
     """Class used to bundle trajectory generation and other helpful
@@ -60,8 +61,41 @@ class Trajectory_Planner:
         return [x, y, z]
     
 
+    def trot_bezier(self, legIdx, position, T_period, t, command_vel=[0,0]):
+        x = position[0]   
+        y = position[1]   
+        z = position[2]   
+        desired_vel_z = command_vel[0]  # FORWARD VELOCITY  
+        desired_vel_x = command_vel[1]  # LATERAL VELOCITY
 
-    import numpy as np
+        if legIdx in (0, 3):  # For legs 0 and 3, adjust time offset for trotting
+            t += T_period / 2
+        t %= T_period
+
+        # TODO: 1) what control velocity is negative
+        #       2) lateral movement!
+        control_points = get_control_points(desired_vel_z*1000, 1/2)
+        
+        start,_ = bezier_curve(0, control_points)
+        end,_ = bezier_curve(1, control_points)
+
+        start_end_dist = abs(start) + abs(end)
+
+        if t <= T_period / 2:  # Swing phase
+            z_vals, y_vals = bezier_curve(t/(T_period/2), control_points)
+            z = -(z_vals/3000 - start_end_dist/3000)
+            y = self.base_height - y_vals/3000
+
+        else: # Stand phase
+            z += start_end_dist/(3000 * T_period/2)
+            y = self.base_height 
+
+        return [x, y, z]
+
+
+
+
+
 
     def trot(self, legIdx, position, step_height, T_period, t, linear_vel=[0,0], command_vel=[0,0], k_z=0.024, k_x=0.024):
         x = position[0]   
@@ -83,8 +117,8 @@ class Trajectory_Planner:
 
         # Raibert heuristic for forward foot placement (z-direction) 
         if t == 37:
-            self.z_fd = (linear_vel_z * 0.25) / 2 + k_z * (linear_vel_z - desired_vel_z)
-            self.x_fd = (linear_vel_x * 0.25)/ 2 + k_x * (linear_vel_x - desired_vel_x)
+            self.z_fd = (linear_vel_z * 0.25) / 2 + k_z * ((linear_vel_z) - desired_vel_z)
+            self.x_fd = (linear_vel_x * 0.25)/ 2 + k_x * ((linear_vel_x) - desired_vel_x)
             
 
         if t >= T_stand:  # Swing phase

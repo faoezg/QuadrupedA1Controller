@@ -4,12 +4,12 @@ import time
 from rclpy.node import Node
 from sensor_msgs.msg import JointState, Imu
 from ros_gz_interfaces.msg import Contacts
-from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist, Quaternion, Vector3
 from nav_msgs.msg import Odometry
 import numpy as np
 from .lib.Trajectory_Planner import Trajectory_Planner
 from .lib import A1_kinematics
+from scipy.spatial.transform import Rotation
 
 command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
                   "/FR_hip_cmd", "/FR_thigh_cmd", "/FR_calf_cmd",
@@ -19,7 +19,7 @@ command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
 class A1Controller(Node):
     def __init__(self):
         super().__init__('a1_controller')
-        self.freq = 100
+        self.freq = 200
         self.timer = self.create_timer(1.0 / self.freq, self.update)
     
         # subscribe to the available sensor data
@@ -33,7 +33,7 @@ class A1Controller(Node):
         self.create_subscription(Odometry, "/a1_ign/odometry", self.odom_callback, 10)
 
         # Initialize State Variables
-        self.orientation = Quaternion()
+        self.rpy = [0.0, 0.0, 0.0]
         self.angular_vel = Vector3()
         self.linear_acc = Vector3()
         self.positions = [0.0]*12
@@ -94,20 +94,22 @@ class A1Controller(Node):
         for legIdx in range(0,4):
 
             # calculate next step:
-            self.hip_to_toe_pos[legIdx] = self.tp.trot(legIdx, self.hip_to_toe_pos[legIdx], 0.05, 50, self.t, self.linear_vel, self.linear_cmd_vel)
-            # print(self.hip_to_toe_pos[legIdx])
+            #self.hip_to_toe_pos[legIdx] = self.tp.trot(legIdx, self.hip_to_toe_pos[legIdx], 0.05, 50, self.t, self.linear_vel, self.linear_cmd_vel)
+            
+            self.hip_to_toe_pos[legIdx] = self.tp.trot_bezier(legIdx, self.hip_to_toe_pos[legIdx], 100, self.t, self.linear_cmd_vel)
+
             #print(self.t)
             # calculate global positions (base to foot)
-            self.global_positions[legIdx] = self.tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
+            #self.global_positions[legIdx] = self.tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
             
             # apply RPY via rotation matrix
-            self.global_positions[legIdx] = self.tp.apply_rpy(self.global_positions[legIdx][0], 
-                                                      self.global_positions[legIdx][1], 
-                                                      self.global_positions[legIdx][2], 
-                                                      self.roll, self.pitch, self.yaw)
+            #self.global_positions[legIdx] = self.tp.apply_rpy(self.global_positions[legIdx][0], 
+            #                                          self.global_positions[legIdx][1], 
+            #                                          self.global_positions[legIdx][2], 
+            #                                          self.roll, self.pitch, self.yaw)
             
             # set new local position (hip to foot)
-            self.hip_to_toe_pos[legIdx] = self.tp.local_foot_pos(legIdx,self.global_positions[legIdx])
+            #self.hip_to_toe_pos[legIdx] = self.tp.local_foot_pos(legIdx,self.global_positions[legIdx])
             
             # get current leg angles from robot
             current_ths = [self.positions[legIdx*3 + 0], 
@@ -130,7 +132,7 @@ class A1Controller(Node):
         self.pub.publish(self.msg)
 
         self.t+=1
-        self.t %= 50
+        self.t %= 100
         
     """Start Up Routine"""    
     def stand_up(self):
@@ -159,6 +161,11 @@ class A1Controller(Node):
         self.acc_y = msg.linear_acceleration.y
         self.acc_z = msg.linear_acceleration.z
 
+        self.rpy = Rotation.from_quat([msg.orientation.x,
+                                  msg.orientation.y,
+                                  msg.orientation.z,
+                                  msg.orientation.w]).as_euler('xyz', degrees=True)
+        
     def FL_contact_callback(self, msg):
         z_force = msg.contacts[0].wrenches[0].body_1_wrench.force.z
         self.contacts[0] = [z_force, 1 if z_force > 0 else 0]
@@ -177,11 +184,11 @@ class A1Controller(Node):
 
     def cmd_vel_callback(self, msg):
         self.linear_cmd_vel = [msg.linear.x, msg.linear.y]
-        print(self.linear_cmd_vel)
         self.angular_vel = msg.angular
 
     def odom_callback(self, msg):
         self.linear_vel = [msg.twist.twist.linear.x, msg.twist.twist.linear.y]
+        
     
 
 def main(args=None):
