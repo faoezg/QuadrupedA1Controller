@@ -56,16 +56,19 @@ def get_control_points(V_desire, T_sw):
                 V_desire/1000 * 170]
     
     # Y coordinates
-    y_coords = [-270+270, 
-                -270+270, 
-                -160+270, 
-                -160+270, 
-                -160+270, 
-                -120+270, 
-                -120+270, 
-                -120+270, 
-                -270+270, 
-                -270+270]
+
+    abs_V_desire = np.abs(V_desire)  # the step high should be the same for either direction
+
+    y_coords = [(-270+270)*(abs_V_desire/1000), 
+                (-270+270)*(abs_V_desire/1000), 
+                (-160+270)*(abs_V_desire/1000), 
+                (-160+270)*(abs_V_desire/1000), 
+                (-160+270)*(abs_V_desire/1000), 
+                (-120+270)*(abs_V_desire/1000), 
+                (-120+270)*(abs_V_desire/1000), 
+                (-120+270)*(abs_V_desire/1000), 
+                (-270+270)*(abs_V_desire/1000), 
+                (-270+270)*(abs_V_desire/1000)] if V_desire!=0 else 10 * [0]  # to avoid dividing by zero in case of no movement!
     
     return list(zip(x_coords, y_coords))
 

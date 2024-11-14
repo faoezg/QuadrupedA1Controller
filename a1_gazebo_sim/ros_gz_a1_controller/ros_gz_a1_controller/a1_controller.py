@@ -19,7 +19,7 @@ command_topics = ["/FL_hip_cmd", "/FL_thigh_cmd", "/FL_calf_cmd",
 class A1Controller(Node):
     def __init__(self):
         super().__init__('a1_controller')
-        self.freq = 200
+        self.freq = 300
         self.timer = self.create_timer(1.0 / self.freq, self.update)
     
         # subscribe to the available sensor data

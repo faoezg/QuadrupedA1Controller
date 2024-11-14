@@ -34,7 +34,7 @@ class LLController(Node):
         self.cmd_thetas = [0.0]*12
 
         # PID Controller Parameters
-        self.kp = [175.0]*12
+        self.kp = [195.0]*12
         self.kp[0] = 50.0
         self.kp[3] = 50.0
         self.kp[6] = 50.0
