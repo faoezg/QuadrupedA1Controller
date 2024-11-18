@@ -5,7 +5,7 @@ class Trajectory_Planner:
     """Class used to bundle trajectory generation and other helpful
                 functions related to the foot positions""" 
                  
-    def __init__(self, base_height=0.225, base_width=0.1) -> None:
+    def __init__(self, base_height=0.225, base_width=0.0838) -> None:
         self.leg_offset_y = 0.1805
         self.leg_offset_x = 0.047
         self.base_height = base_height
@@ -66,8 +66,8 @@ class Trajectory_Planner:
         x = position[0]   
         y = position[1]   
         z = position[2]   
-        desired_vel_z = command_vel[0]  # FORWARD VELOCITY (negative because negative z axis in hip coordinates is forward in world coordinates)  
-        desired_vel_x = command_vel[1]  # LATERAL VELOCITY
+        desired_vel_z = command_vel[0]/2  # FORWARD VELOCITY (negative because negative z axis in hip coordinates is forward in world coordinates)  
+        desired_vel_x = command_vel[1]/2  # LATERAL VELOCITY
 
         if legIdx in (0, 3):  # For legs 0 and 3, adjust time offset for trotting
             t += T_period / 2
@@ -76,7 +76,6 @@ class Trajectory_Planner:
         if t==0 or t== T_period/2:  # limit updating of control points for less eradic behaviours
             self.control_points_fw = get_control_points(desired_vel_z*1000, 1/2)  # control points for forward movement
             self.control_points_lt = get_control_points(desired_vel_x*1000, 1/2)  # for lateral movement
-            # self.control_points_abs = get_control_points(np.sqrt(desired_vel_x**2+desired_vel_z**2)*1000, 1/2)
         
             self.start_fw,_ = bezier_curve(0, self.control_points_fw)
             self.end_fw,_ = bezier_curve(1, self.control_points_fw)
@@ -88,84 +87,36 @@ class Trajectory_Planner:
 
         if t <= T_period / 2:  # Swing phase
             z_vals, y_vals_z = bezier_curve(t/(T_period/2), self.control_points_fw)
-            #x_vals, y_vals_x = bezier_curve(t/(T_period/2), self.control_points_fw)
-            # _, y_vals = bezier_curve(t/(T_period/2), self.control_points_abs)
+            x_vals, y_vals_x = bezier_curve(t/(T_period/2), self.control_points_lt)
+            #_, y_vals = bezier_curve(t/(T_period/2), self.control_points_abs)
 
-            if desired_vel_z > 0:
-                z = -(z_vals/3000 - self.start_end_dist_fw/6000)
-            elif desired_vel_z <= 0:
-                z = -z_vals/3000 # - self.start_end_dist_fw/6000)
+            y = self.base_height - y_vals_z/1000 if np.abs(desired_vel_z) > np.abs(desired_vel_x) else self.base_height - y_vals_x/1000
+            #print(y)
 
-                
-            #x = -(x_vals/3000 - self.start_end_dist_lt/6000) - self.base_width if legIdx % 2 == 0 else -(x_vals/3000 - self.start_end_dist_lt/6000) + self.base_width
-            
-            y = self.base_height - y_vals_z/2000
+            z = -(z_vals/3000) 
+
+            if desired_vel_x<0:  # CASE RUNNING LEFT
+                x = -(x_vals/3000)/2 - (self.base_width - 0.03) if legIdx % 2 == 0 else -(x_vals/3000)/2 + (self.base_width + 0.03)
+
+            if desired_vel_x>0:  # CASE RUNNING RIGHT
+                x = -(x_vals/3000)/2 - (self.base_width + 0.03) if legIdx % 2 == 0 else -(x_vals/3000)/2 + (self.base_width - 0.03)
+            else:
+                x = -(x_vals/3000)/2 - (self.base_width) if legIdx % 2 == 0 else -(x_vals/3000)/2 + self.base_width
+
 
         else: # Stand phase
             if desired_vel_z < 0:
-                z -= self.start_end_dist_fw/(3000 * T_period/2)
+                     z -= self.start_end_dist_fw/(3000*T_period/2)
             elif desired_vel_z >=0:
-                z += self.start_end_dist_fw/(3000*T_period/2)
-
-            #if desired_vel_x < 0:
-            #    x += self.start_end_dist_lt/(3000*T_period/2)
-            #elif desired_vel_x >= 0:
-            #    x -= self.start_end_dist_lt/(3000*T_period/2)
+                     z += self.start_end_dist_fw/(3000*T_period/2)
+            if desired_vel_x < 0:
+                x -= self.start_end_dist_lt/(3000*T_period/2)
+            elif desired_vel_x >= 0:
+                x += self.start_end_dist_lt/(3000*T_period/2)
 
 
             y = self.base_height 
 
-        return [x, y, z]
-
-
-
-
-
-
-    def trot(self, legIdx, position, step_height, T_period, t, linear_vel=[0,0], command_vel=[0,0], k_z=0.024, k_x=0.024):
-        x = position[0]   
-        y = position[1]   
-        z = position[2]   
-        desired_vel_z = command_vel[0]  
-        linear_vel_z = linear_vel[0]    
-        desired_vel_x = command_vel[1]  
-        linear_vel_x = linear_vel[1]   
-
-        T_swing = T_period / 2
-        T_stand = T_period / 2
-
-        if legIdx in (0, 3):  # For legs 0 and 3, adjust time offset for trotting
-            t += T_period / 2
-        t %= T_period
-
-        
-
-        # Raibert heuristic for forward foot placement (z-direction) 
-        if t == 37:
-            self.z_fd = (linear_vel_z * 0.25) / 2 + k_z * ((linear_vel_z) - desired_vel_z)
-            self.x_fd = (linear_vel_x * 0.25)/ 2 + k_x * ((linear_vel_x) - desired_vel_x)
-            
-
-        if t >= T_stand:  # Swing phase
-            u = t - T_stand
-            if np.abs(z) < 0.5:
-                z -= self.z_fd/25
-            else:
-                z = np.sign(z) * 0.5 
-            
-            if np.abs(x) < 0.5:
-                x -= self.x_fd/25
-            else:
-                x = np.sign(x) * 0.3
-
-            y = -step_height * np.sin(np.pi * u / T_swing) + self.base_height
-        else:  # Stand phase
-
-            y = self.base_height
-            z += self.z_fd/25
-            x += self.x_fd/25
-
-        # Return the foot position for the leg
         return [x, y, z]
 
     

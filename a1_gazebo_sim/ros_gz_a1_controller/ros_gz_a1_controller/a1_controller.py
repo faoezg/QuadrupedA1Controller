@@ -93,9 +93,6 @@ class A1Controller(Node):
         
         for legIdx in range(0,4):
 
-            # calculate next step:
-            #self.hip_to_toe_pos[legIdx] = self.tp.trot(legIdx, self.hip_to_toe_pos[legIdx], 0.05, 50, self.t, self.linear_vel, self.linear_cmd_vel)
-            
             self.hip_to_toe_pos[legIdx] = self.tp.trot_bezier(legIdx, self.hip_to_toe_pos[legIdx], 100, self.t, self.linear_cmd_vel)
 
             #print(self.t)
@@ -183,11 +180,13 @@ class A1Controller(Node):
         self.contacts[3] = [z_force, 1 if z_force > 0 else 0]
 
     def cmd_vel_callback(self, msg):
+
         self.linear_cmd_vel = [msg.linear.x, msg.linear.y]
+        
         self.angular_vel = msg.angular
 
     def odom_callback(self, msg):
-        self.linear_vel = [msg.twist.twist.linear.x, msg.twist.twist.linear.y]
+        self.linear_vel = [-msg.twist.twist.linear.x, msg.twist.twist.linear.y]
         
     
 

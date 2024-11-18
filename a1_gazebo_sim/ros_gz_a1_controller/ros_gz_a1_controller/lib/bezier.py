@@ -18,6 +18,7 @@ def bezier_curve(t, control_points):
         bernstein = comb(n, i) * (1 - t)**(n - i) * t**i
         x += bernstein * px
         y += bernstein * py
+
     return x, y
 
 def generate_bezier_points(control_points, num_points=100):
@@ -43,21 +44,22 @@ def generate_bezier_points(control_points, num_points=100):
 # (remove P6 and P4) and multiply all points by a velocity command in order to make the trajectory wider. 
 # the robot will (hopefully) smooothly transition between standing and trotting
 def get_control_points(V_desire, T_sw):
-    # Corrected X coordinates
+
+    abs_V_desire = np.abs(V_desire)  # the step high should be the same for either direction
+
     x_coords = [V_desire/1000 * -170, 
-                V_desire/1000 * -(170 + V_desire / ((12 + 1) * T_sw)), 
+                V_desire/1000 * -(170 + abs_V_desire / ((12 + 1) * T_sw)), 
                 V_desire/1000 * -300,
                 V_desire/1000 * -300, 
                 0, 
                 0, 
                 V_desire/1000 * 300, 
                 V_desire/1000 * 300, 
-                V_desire/1000 * (170 + V_desire / ((12 + 1) * T_sw)), 
+                V_desire/1000 * (170 + abs_V_desire / ((12 + 1) * T_sw)), 
                 V_desire/1000 * 170]
     
     # Y coordinates
 
-    abs_V_desire = np.abs(V_desire)  # the step high should be the same for either direction
 
     y_coords = [(-270+270)*(abs_V_desire/1000), 
                 (-270+270)*(abs_V_desire/1000), 
@@ -76,7 +78,7 @@ def get_control_points(V_desire, T_sw):
 def plot_bezier_curve(V_desires, T_sw=1.0):
     plt.figure(figsize=(10, 6))
     for V_desire in V_desires:
-        control_points = get_control_points(V_desire, T_sw)
+        control_points = get_control_points(-V_desire, T_sw)
         print(len(control_points))
         x_vals, y_vals = generate_bezier_points(control_points)
         plt.plot(x_vals, y_vals, label=f'V_desire = {V_desire}')
