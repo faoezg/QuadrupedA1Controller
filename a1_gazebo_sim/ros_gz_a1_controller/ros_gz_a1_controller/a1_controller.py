@@ -72,10 +72,11 @@ class A1Controller(Node):
                                0.0,2.69,-2.69,
                                0.0,2.69,-2.69,
                                0.0,2.69,-2.69])
-        self.x_shift = 0.06
+
         self.goal_yaw = self.yaw = self.pitch = self.roll = 0.0
         self.linear_vel = [0.0, 0.0]
         self.linear_cmd_vel = [0.0, 0.0]
+        self.angular_cmd_vel = 0.0
 
         self.global_positions = [[0, 0, 0],
                                  [0, 0, 0],
@@ -83,6 +84,7 @@ class A1Controller(Node):
                                  [0, 0, 0]]
         
         self.tp = Trajectory_Planner()
+        self.correct_rp = False  # whether to use imu data to correct roll and pitch angle of the robots base
         self.t = 0
 
         self.stand_up()
@@ -90,29 +92,15 @@ class A1Controller(Node):
 
     """Main loop of the controller, updates at self.freq"""
     def update(self):
-        
         for legIdx in range(0,4):
-
-            self.hip_to_toe_pos[legIdx] = self.tp.trot_bezier(legIdx, self.hip_to_toe_pos[legIdx], 100, self.t, self.linear_cmd_vel)
-
-            #print(self.t)
-            # calculate global positions (base to foot)
-            #self.global_positions[legIdx] = self.tp.global_foot_pos(legIdx, self.hip_to_toe_pos[legIdx])
             
-            # apply RPY via rotation matrix
-            #self.global_positions[legIdx] = self.tp.apply_rpy(self.global_positions[legIdx][0], 
-            #                                          self.global_positions[legIdx][1], 
-            #                                          self.global_positions[legIdx][2], 
-            #                                          self.roll, self.pitch, self.yaw)
-            
-            # set new local position (hip to foot)
-            #self.hip_to_toe_pos[legIdx] = self.tp.local_foot_pos(legIdx,self.global_positions[legIdx])
+            self.hip_to_toe_pos[legIdx] = self.tp.trot_bezier(legIdx, self.hip_to_toe_pos[legIdx], 100, self.t, self.linear_cmd_vel, self.angular_cmd_vel)
             
             # get current leg angles from robot
             current_ths = [self.positions[legIdx*3 + 0], 
                            self.positions[legIdx*3 + 1], 
                            self.positions[legIdx*3 + 2]]
-            
+
             # calculate closest solution for next position
             goal_ths  = A1_kinematics.calc_correct_thetas([self.hip_to_toe_pos[legIdx][0], 
                                                            self.hip_to_toe_pos[legIdx][1], 
@@ -124,7 +112,6 @@ class A1Controller(Node):
             self.desired_theta[legIdx*3 + 1] = goal_ths[1]     
 
 
-        
         self.msg.position = self.desired_theta
         self.pub.publish(self.msg)
 
@@ -161,7 +148,7 @@ class A1Controller(Node):
         self.rpy = Rotation.from_quat([msg.orientation.x,
                                   msg.orientation.y,
                                   msg.orientation.z,
-                                  msg.orientation.w]).as_euler('xyz', degrees=True)
+                                  msg.orientation.w]).as_euler('xyz', degrees=False)
         
     def FL_contact_callback(self, msg):
         z_force = msg.contacts[0].wrenches[0].body_1_wrench.force.z
@@ -180,13 +167,11 @@ class A1Controller(Node):
         self.contacts[3] = [z_force, 1 if z_force > 0 else 0]
 
     def cmd_vel_callback(self, msg):
-
         self.linear_cmd_vel = [msg.linear.x, msg.linear.y]
-        
-        self.angular_vel = msg.angular
+        self.angular_cmd_vel = msg.angular.z
 
     def odom_callback(self, msg):
-        self.linear_vel = [-msg.twist.twist.linear.x, msg.twist.twist.linear.y]
+        self.linear_vel = [msg.twist.twist.linear.x, msg.twist.twist.linear.y]
         
     
 

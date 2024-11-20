@@ -8,7 +8,7 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Twist
 
 class CMDVelPubGUI(Node):
-    def __init__(self, width=400, height=300):
+    def __init__(self, width=800, height=500):
         super().__init__('cmdvel_pub_gui')
         
         pygame.init()
@@ -25,8 +25,8 @@ class CMDVelPubGUI(Node):
         pygame.display.set_caption("CMDVel Pub 3D")
 
         # Constants
-        self.SLIDER_RADIUS = 50
-        self.JOYSTICK_RADIUS = 15
+        self.SLIDER_RADIUS = 100
+        self.JOYSTICK_RADIUS = 20
         self.CENTER1 = (width*1/4, height/2)
         self.CENTER2 = (width*3/4, height/2)
         
@@ -97,8 +97,8 @@ class CMDVelPubGUI(Node):
         cmd_vel_msg = Twist()
             
 
-        cmd_vel_msg.linear.x = self.slider_x_vel
-        cmd_vel_msg.linear.y = self.slider_y_vel
+        cmd_vel_msg.linear.x = -self.slider_x_vel
+        cmd_vel_msg.linear.y = -self.slider_y_vel
         
         cmd_vel_msg.angular.z = self.slider_yaw_vel
 

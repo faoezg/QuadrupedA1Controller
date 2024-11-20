@@ -62,7 +62,7 @@ class Trajectory_Planner:
         return [x, y, z]
     
 
-    def trot_bezier(self, legIdx, position, T_period, t, command_vel=[0,0]):
+    def trot_bezier(self, legIdx, position, T_period, t, command_vel=[0,0], angular_command_vel=0):
         x = position[0]   
         y = position[1]   
         z = position[2]   
@@ -76,47 +76,68 @@ class Trajectory_Planner:
         if t==0 or t== T_period/2:  # limit updating of control points for less eradic behaviours
             self.control_points_fw = get_control_points(desired_vel_z*1000, 1/2)  # control points for forward movement
             self.control_points_lt = get_control_points(desired_vel_x*1000, 1/2)  # for lateral movement
+            self.control_points_yaw = get_control_points(angular_command_vel*1000, 1/2)  # for yaw movement
         
             self.start_fw,_ = bezier_curve(0, self.control_points_fw)
             self.end_fw,_ = bezier_curve(1, self.control_points_fw)
             self.start_lt,_ = bezier_curve(0, self.control_points_lt)
             self.end_lt,_ = bezier_curve(1, self.control_points_lt)
+            self.start_yaw,_ = bezier_curve(0, self.control_points_yaw)
+            self.end_yaw,_ = bezier_curve(1, self.control_points_yaw)
+            
 
             self.start_end_dist_fw = abs(self.start_fw) + abs(self.end_fw)
             self.start_end_dist_lt = abs(self.start_lt) + abs(self.end_lt)
+            self.start_end_dist_yaw = abs(self.start_yaw) + abs(self.end_yaw)
+
 
         if t <= T_period / 2:  # Swing phase
             z_vals, y_vals_z = bezier_curve(t/(T_period/2), self.control_points_fw)
             x_vals, y_vals_x = bezier_curve(t/(T_period/2), self.control_points_lt)
-            #_, y_vals = bezier_curve(t/(T_period/2), self.control_points_abs)
+            yaw_vals, y_vals_yaw = bezier_curve(t/(T_period/2), self.control_points_yaw)
 
-            y = self.base_height - y_vals_z/1000 if np.abs(desired_vel_z) > np.abs(desired_vel_x) else self.base_height - y_vals_x/1000
-            #print(y)
+            if angular_command_vel == 0:
+                y = self.base_height - y_vals_z/1000 if np.abs(desired_vel_z) > np.abs(desired_vel_x) else self.base_height - y_vals_x/1000
 
             z = -(z_vals/3000) 
 
-            if desired_vel_x<0:  # CASE RUNNING LEFT
-                x = -(x_vals/3000)/2 - (self.base_width - 0.03) if legIdx % 2 == 0 else -(x_vals/3000)/2 + (self.base_width + 0.03)
+            x = -(x_vals/6000)- (self.base_width) if legIdx % 2 == 0 else -(x_vals/6000) + self.base_width
 
-            if desired_vel_x>0:  # CASE RUNNING RIGHT
-                x = -(x_vals/3000)/2 - (self.base_width + 0.03) if legIdx % 2 == 0 else -(x_vals/3000)/2 + (self.base_width - 0.03)
-            else:
-                x = -(x_vals/3000)/2 - (self.base_width) if legIdx % 2 == 0 else -(x_vals/3000)/2 + self.base_width
+            if angular_command_vel != 0:
+                y = self.base_height - y_vals_yaw/1000
+                # calculte position in body frame:
+                pos = self.global_foot_pos(legIdx, [x,y,z])
+
+                # apply yaw rotation
+                pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, yaw_vals/6000)
+
+                # convert back to hip frame
+
+                x, y, z = self.local_foot_pos(legIdx, pos)
 
 
         else: # Stand phase
+
             if desired_vel_z < 0:
-                     z -= self.start_end_dist_fw/(3000*T_period/2)
+                     z -= self.start_end_dist_fw/(3000 * T_period/2)
             elif desired_vel_z >=0:
-                     z += self.start_end_dist_fw/(3000*T_period/2)
+                     z += self.start_end_dist_fw/(3000 * T_period/2)
             if desired_vel_x < 0:
-                x -= self.start_end_dist_lt/(3000*T_period/2)
+                x -= self.start_end_dist_lt/(6000 * T_period/2)
             elif desired_vel_x >= 0:
-                x += self.start_end_dist_lt/(3000*T_period/2)
+                x += self.start_end_dist_lt/(6000 * T_period/2)
 
-
-            y = self.base_height 
-
+            # rotate back the amount rotated during swing phase
+            if angular_command_vel != 0:
+                if angular_command_vel > 0:
+                    pos = self.global_foot_pos(legIdx, [x,y,z])
+                    pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, -(self.start_end_dist_yaw)/(6000 * T_period/2))
+                    x, y, z = self.local_foot_pos(legIdx, pos)
+                elif angular_command_vel < 0:
+                    pos = self.global_foot_pos(legIdx, [x,y,z])
+                    pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, (self.start_end_dist_yaw)/(6000 * T_period/2))
+                    x, y, z = self.local_foot_pos(legIdx, pos)    
+                    
         return [x, y, z]
 
     
