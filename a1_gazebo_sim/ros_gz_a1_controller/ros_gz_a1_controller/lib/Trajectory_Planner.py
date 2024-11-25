@@ -10,16 +10,21 @@ class Trajectory_Planner:
         self.leg_offset_x = 0.047
         self.base_height = base_height
         self.base_width = base_width
-        self.z_fd = 0.0
-        self.x_fd = 0.0
 
     def big_steppa(self, legIdx,position, step_height, step_length, T_period, t):
-        # -positioon: current x,y,z coordinates
-        # -step height: adjusts movement in Y direction (up/down)
-        # -step_length: adjusts movement in Z direction (forward/backward)
-        # -T_period: duration of one step
-        # -T_stand: duration of stand phase
-        # -t: current time
+        """
+        Calculate the trajectory for a leg of a quadruped robot during a step.
+        Args:
+            legIdx (int): Index of the leg (0, 1, 2, or 3).
+            position (list): Initial position [x, y, z] of the leg.
+            step_height (float): Height of the step.
+            step_length (float): Length of the step.
+            T_period (float): Total period of the step cycle.
+            t (float): Current time within the step cycle.
+        Returns:
+            list: Updated position [x, y, z] of the leg.
+        """
+        
         x = position[0]
         y = position[1]
         z = position[2]
@@ -63,80 +68,79 @@ class Trajectory_Planner:
     
 
     def trot_bezier(self, legIdx, position, T_period, t, command_vel=[0,0], angular_command_vel=0):
+        """
+        Generates the trajectory for a leg using a Bezier curve for a trotting gait.
+        Only forward and yaw movements are currently implemented.
+        Args:
+            legIdx (int): Index of the leg (0 to 3).
+            position (list): Initial position of the leg [x, y, z].
+            T_period (float): Total period of the trot cycle.
+            t (float): Current time within the trot cycle.
+            command_vel (list, optional): Commanded velocity [forward, lateral]. Defaults to [0, 0].
+            angular_command_vel (float, optional): Commanded angular velocity. Defaults to 0.
+        Returns:
+            list: Updated position of the leg [x, y, z].
+        """
+        yaw_scaler = 1/3
+        z_scaler = 1/2
         x = position[0]   
         y = position[1]   
         z = position[2]   
-        desired_vel_z = command_vel[0]/2  # FORWARD VELOCITY (negative because negative z axis in hip coordinates is forward in world coordinates)  
-        desired_vel_x = command_vel[1]/2  # LATERAL VELOCITY
+        desired_vel_z = command_vel[0]/2  # FORWARD VELOCITY
 
         if legIdx in (0, 3):  # For legs 0 and 3, adjust time offset for trotting
             t += T_period / 2
         t %= T_period
 
         if t==0 or t== T_period/2:  # limit updating of control points for less eradic behaviours
-            self.control_points_fw = get_control_points(desired_vel_z*1000, 1/2)  # control points for forward movement
-            self.control_points_lt = get_control_points(desired_vel_x*1000, 1/2)  # for lateral movement
-            self.control_points_yaw = get_control_points(angular_command_vel*1000, 1/2)  # for yaw movement
+            self.control_points_fw = get_control_points(desired_vel_z, 1/2)  # control points for forward movement
+            self.control_points_yaw = get_control_points(angular_command_vel, 1/2)  # for yaw movement
         
             self.start_fw,_ = bezier_curve(0, self.control_points_fw)
             self.end_fw,_ = bezier_curve(1, self.control_points_fw)
-            self.start_lt,_ = bezier_curve(0, self.control_points_lt)
-            self.end_lt,_ = bezier_curve(1, self.control_points_lt)
             self.start_yaw,_ = bezier_curve(0, self.control_points_yaw)
             self.end_yaw,_ = bezier_curve(1, self.control_points_yaw)
             
 
             self.start_end_dist_fw = abs(self.start_fw) + abs(self.end_fw)
-            self.start_end_dist_lt = abs(self.start_lt) + abs(self.end_lt)
             self.start_end_dist_yaw = abs(self.start_yaw) + abs(self.end_yaw)
 
 
         if t <= T_period / 2:  # Swing phase
             z_vals, y_vals_z = bezier_curve(t/(T_period/2), self.control_points_fw)
-            x_vals, y_vals_x = bezier_curve(t/(T_period/2), self.control_points_lt)
             yaw_vals, y_vals_yaw = bezier_curve(t/(T_period/2), self.control_points_yaw)
 
-            if angular_command_vel == 0:
-                y = self.base_height - y_vals_z/1000 if np.abs(desired_vel_z) > np.abs(desired_vel_x) else self.base_height - y_vals_x/1000
+            
+            z = -(z_vals * z_scaler) 
+            x = -(self.base_width) if legIdx % 2 == 0 else self.base_width
+            y = self.base_height - y_vals_yaw if np.abs(angular_command_vel) > np.abs(desired_vel_z) else self.base_height - y_vals_z
+            
+            # calculte position in body frame:
+            pos = self.global_foot_pos(legIdx, [x,y,z])
 
-            z = -(z_vals/3000) 
+            # apply yaw rotation
+            pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, yaw_vals * yaw_scaler)
 
-            x = -(x_vals/6000)- (self.base_width) if legIdx % 2 == 0 else -(x_vals/6000) + self.base_width
-
-            if angular_command_vel != 0:
-                y = self.base_height - y_vals_yaw/1000
-                # calculte position in body frame:
-                pos = self.global_foot_pos(legIdx, [x,y,z])
-
-                # apply yaw rotation
-                pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, yaw_vals/6000)
-
-                # convert back to hip frame
-
-                x, y, z = self.local_foot_pos(legIdx, pos)
+            # convert back to hip frame
+            x, y, z = self.local_foot_pos(legIdx, pos)
 
 
         else: # Stand phase
 
             if desired_vel_z < 0:
-                     z -= self.start_end_dist_fw/(3000 * T_period/2)
+                     z -= self.start_end_dist_fw/(T_period/2) * z_scaler
             elif desired_vel_z >=0:
-                     z += self.start_end_dist_fw/(3000 * T_period/2)
-            if desired_vel_x < 0:
-                x -= self.start_end_dist_lt/(6000 * T_period/2)
-            elif desired_vel_x >= 0:
-                x += self.start_end_dist_lt/(6000 * T_period/2)
+                     z += self.start_end_dist_fw/(T_period/2) * z_scaler
 
             # rotate back the amount rotated during swing phase
-            if angular_command_vel != 0:
-                if angular_command_vel > 0:
-                    pos = self.global_foot_pos(legIdx, [x,y,z])
-                    pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, -(self.start_end_dist_yaw)/(6000 * T_period/2))
-                    x, y, z = self.local_foot_pos(legIdx, pos)
-                elif angular_command_vel < 0:
-                    pos = self.global_foot_pos(legIdx, [x,y,z])
-                    pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, (self.start_end_dist_yaw)/(6000 * T_period/2))
-                    x, y, z = self.local_foot_pos(legIdx, pos)    
+            if angular_command_vel > 0:
+                pos = self.global_foot_pos(legIdx, [x,y,z])
+                pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, -(self.start_end_dist_yaw)/(T_period/2) * yaw_scaler)
+                x, y, z = self.local_foot_pos(legIdx, pos)
+            elif angular_command_vel < 0:
+                pos = self.global_foot_pos(legIdx, [x,y,z])
+                pos = self.apply_rpy(pos[0], pos[1], pos[2], 0, 0, (self.start_end_dist_yaw)/(T_period/2) * yaw_scaler)
+                x, y, z = self.local_foot_pos(legIdx, pos)    
                     
         return [x, y, z]
 

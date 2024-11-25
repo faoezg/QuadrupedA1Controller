@@ -8,8 +8,8 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Twist
 
 class CMDVelPubGUI(Node):
-    def __init__(self, width=800, height=500):
-        super().__init__('cmdvel_pub_gui')
+    def __init__(self, width=400, height=400):
+        super().__init__('cmdVel_pub_gui')
         
         pygame.init()
         pygame.font.init()
@@ -25,24 +25,21 @@ class CMDVelPubGUI(Node):
         pygame.display.set_caption("CMDVel Pub 3D")
 
         # Constants
-        self.SLIDER_RADIUS = 100
+        self.SLIDER_RADIUS = 150
         self.JOYSTICK_RADIUS = 20
-        self.CENTER1 = (width*1/4, height/2)
-        self.CENTER2 = (width*3/4, height/2)
+        self.CENTER1 = (width*1/2, height/2)
         
         # Joystick positions
         self.joystick1_pos = self.CENTER1
-        self.joystick2_pos = self.CENTER2
         
         # Active joystick flags
         self.active_joystick1 = False
-        self.active_joystick2 = False
         
         # ROS2 setup
         self.pose_publisher = self.create_publisher(Twist, '/cmd_vel', 10)
         self.timer = self.create_timer(0.04, self.publish_and_update)  # 25 Hz
 
-        self.slider_x_vel = self.slider_y_vel = self.slider_yaw_vel = 0.0       
+        self.slider_x_vel = self.slider_y_vel = 0.0       
 
 
     def draw_joystick(self, center, position, color, label="No Label"):
@@ -69,28 +66,20 @@ class CMDVelPubGUI(Node):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if np.hypot(event.pos[0] - self.joystick1_pos[0], event.pos[1] - self.joystick1_pos[1]) <= self.JOYSTICK_RADIUS:
                     self.active_joystick1 = True
-
-                elif np.hypot(event.pos[0] - self.joystick2_pos[0], event.pos[1] - self.joystick2_pos[1]) <= self.JOYSTICK_RADIUS:
-                    self.active_joystick2 = True
                     
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.active_joystick1 = False
-                self.active_joystick2 = False
                 # reset if slider is let go 
                 
-                self.slider_x_vel = self.slider_y_vel = self.slider_yaw_vel= 0.0
+                self.slider_x_vel = self.slider_y_vel = 0.0
                 self.joystick1_pos = self.CENTER1
-                self.joystick2_pos = self.CENTER2
                 
             elif event.type == pygame.MOUSEMOTION:
                 if self.active_joystick1:
                     self.joystick1_pos = self.get_joystick_position(self.CENTER1, event.pos)
                     self.slider_y_vel = ((self.joystick1_pos[0] - self.CENTER1[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))
                     self.slider_x_vel = ((self.joystick1_pos[1] - self.CENTER1[1]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))
-                                 
-                elif self.active_joystick2:
-                    self.joystick2_pos = self.get_joystick_position(self.CENTER2, event.pos)
-                    self.slider_yaw_vel = ((self.joystick2_pos[0] - self.CENTER2[0]) / (self.SLIDER_RADIUS - self.JOYSTICK_RADIUS))
+
         return True
 
     def publish_and_update(self): 
@@ -98,9 +87,7 @@ class CMDVelPubGUI(Node):
             
 
         cmd_vel_msg.linear.x = -self.slider_x_vel
-        cmd_vel_msg.linear.y = -self.slider_y_vel
-        
-        cmd_vel_msg.angular.z = self.slider_yaw_vel
+        cmd_vel_msg.angular.z = -self.slider_y_vel
 
         self.pose_publisher.publish(cmd_vel_msg)
         
@@ -108,8 +95,7 @@ class CMDVelPubGUI(Node):
         self.screen.fill((255, 255, 255))
 
         # Draw joysticks
-        self.draw_joystick(self.CENTER1, self.joystick1_pos, (0, 0, 255), "Linear Velocity")
-        self.draw_joystick(self.CENTER2, self.joystick2_pos, (0, 255, 0), "Angular Velocity")
+        self.draw_joystick(self.CENTER1, self.joystick1_pos, (0, 0, 255), "Up/Down: Linear | Left/Right: Angular")
                 
         # Update display
         pygame.display.flip()
