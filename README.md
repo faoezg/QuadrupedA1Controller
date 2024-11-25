@@ -6,7 +6,8 @@ A collection of ROS2 Packages to handle the simulation of the Unitree A1 Quadrup
 
 
 Important Packages:
-- a recent version of Pygame (only for Kinematics Demo GUI, "/pose" topic can also be published via commandline or RQT!)
+- numpy, scipy, matplotlib
+- a recent version of Pygame (for Kinematics Demo GUI / Locomotion Controller, but "/pose" and "/cmdvel" topics can also be published via commandline or RQT!)
 - ROS2 Jazzy
 - Gazebo Sim Harmonic (older distributions of Gazebo Sim do not fully support e.g. the Feet Contact Sensors)
 
@@ -23,16 +24,17 @@ Our project structure is based on the [ros_gz_project_template](https://github.c
 - ros_gz_a1_description: Unitree A1 .sdf file and meshes
 - ros_gz_a1_gazebo: World description files for Gazebo Sim
 
-![Alt Text](https://i.imgur.com/f0Jjd32.png)
 
-The Above image is a visualization of the foot workspace and redundant positions (those with multiple viable joint configurations colored in blue) in RViz using Pointclouds.
+# Usage:
 
-## Usage:
+### Wholebody Kinematics Demo:
+
 This script uses the Gazebo Sim Plugins for PID Control and our inverse kinematics model to showcase the translation/rotation of the robot's body in all 6 movement axes. 
 We set up a small Pygame window to use a joystick GUI for easy and intuitive input.
 
 
-![Alt Text](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDgwZDV5MG5sa2V5cGNrNDV1YXhmMHJscjZkNHBpd3RzMHY1Znp1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Zwn2wgBUeAppXXqY6Q/giphy.gif)
+<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDgwZDV5MG5sa2V5cGNrNDV1YXhmMHJscjZkNHBpd3RzMHY1Znp1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Zwn2wgBUeAppXXqY6Q/giphy.gif" alt="Alt Text" width="450">
+
 
 The Gazebo environment with all necessary control topics can be launched using:
 ```
@@ -48,4 +50,24 @@ and
 ros2 run ros_gz_a1_controller pose_pub_gui
 ```
 
-You can also control the robot using torque commands. To switch between torque/position control add "use_force_ctrl=True"(default: False) when launching the simulation.
+### Locomotion Controller:
+This is our implementation of a trotting gait using adaptive bezier curves for trajectory generation. This controller enables the robot to move forward (/backward) and rotate around the robot's z-axis (either on the spot or when moving). Currently the robot is capable of reaching every point on a planar world.
+
+![Alt Text](https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHVocnRzNWRqcXlsNzMyamZnMHk1Yzhna2diaWdud3gxYmszOTJoeCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/m4xsEcm3qinwZwdHMF/giphy.gif)
+
+To use the locomotion controller run the following commands:
+```
+ros2 launch ros_gz_a1_bringup a1_gazebo_sim.launch.py use_force_ctrl:=True
+```
+(Press start in Gazebo Sim before running the low_level_controller to let the robot lay on the ground)
+```
+ros2 run ros_gz_a1_controller low_level_controller
+```
+
+```
+ros2 run ros_gz_a1_controller a1_controller
+```
+
+```
+ros2 run ros_gz_a1_ui cmdvel_pub_gui
+```

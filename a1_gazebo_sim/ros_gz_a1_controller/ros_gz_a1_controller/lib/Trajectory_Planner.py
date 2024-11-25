@@ -82,11 +82,11 @@ class Trajectory_Planner:
             list: Updated position of the leg [x, y, z].
         """
         yaw_scaler = 1/3
-        z_scaler = 1/2
+        z_scaler = 1/4
         x = position[0]   
         y = position[1]   
         z = position[2]   
-        desired_vel_z = command_vel[0]/2  # FORWARD VELOCITY
+        desired_vel_z = command_vel[0]  # FORWARD VELOCITY
 
         if legIdx in (0, 3):  # For legs 0 and 3, adjust time offset for trotting
             t += T_period / 2
@@ -111,7 +111,7 @@ class Trajectory_Planner:
             yaw_vals, y_vals_yaw = bezier_curve(t/(T_period/2), self.control_points_yaw)
 
             
-            z = -(z_vals * z_scaler) 
+            z = -(z_vals * z_scaler) - 0.01
             x = -(self.base_width) if legIdx % 2 == 0 else self.base_width
             y = self.base_height - y_vals_yaw if np.abs(angular_command_vel) > np.abs(desired_vel_z) else self.base_height - y_vals_z
             
@@ -126,7 +126,6 @@ class Trajectory_Planner:
 
 
         else: # Stand phase
-
             if desired_vel_z < 0:
                      z -= self.start_end_dist_fw/(T_period/2) * z_scaler
             elif desired_vel_z >=0:
@@ -185,7 +184,19 @@ class Trajectory_Planner:
         return position
     
     def apply_rpy(self,x,y,z,roll,pitch,yaw):
-        """Function to rotate global positions according to desired base-rpy"""
+        """
+        Applies roll, pitch, and yaw rotations to a 3D vector.
+        Parameters:
+        x (float): The x-coordinate of the vector.
+        y (float): The y-coordinate of the vector.
+        z (float): The z-coordinate of the vector.
+        roll (float): The roll angle in radians.
+        pitch (float): The pitch angle in radians.
+        yaw (float): The yaw angle in radians.
+        Returns:
+        list: A list containing the new x, y, and z coordinates after applying the rotations.
+        """
+        
         
         rotate_y = np.matrix([[np.cos(yaw), 0, np.sin(yaw)],
                             [0, 1, 0],

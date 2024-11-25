@@ -96,5 +96,5 @@ def plot_bezier_curve(V_desires, T_sw=1.0):
 
 if __name__ == "__main__":
     # Example usage: Plot for different desired velocities
-    V_desires = [1000]  # mm/s
+    V_desires = [1]  # mm/s
     plot_bezier_curve(V_desires)
