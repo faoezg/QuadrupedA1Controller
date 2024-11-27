@@ -34,6 +34,7 @@ class A1Controller(Node):
 
         # Initialize State Variables
         self.rpy = [0.0, 0.0, 0.0]
+        self.rp = [0.0, 0.0]
         self.angular_vel = Vector3()
         self.linear_acc = Vector3()
         self.positions = [0.0]*12
@@ -73,7 +74,6 @@ class A1Controller(Node):
                                0.0,2.69,-2.69,
                                0.0,2.69,-2.69])
 
-        self.goal_yaw = self.yaw = self.pitch = self.roll = 0.0
         self.linear_vel = [0.0, 0.0]
         self.linear_cmd_vel = [0.0, 0.0]
         self.angular_cmd_vel = 0.0
@@ -101,7 +101,7 @@ class A1Controller(Node):
                            self.positions[legIdx*3 + 1], 
                            self.positions[legIdx*3 + 2]]
 
-            # calculate closest solution for next position
+            # calculate solution for next position
             goal_ths  = A1_kinematics.calc_correct_thetas([self.hip_to_toe_pos[legIdx][0], 
                                                            self.hip_to_toe_pos[legIdx][1], 
                                                            self.hip_to_toe_pos[legIdx][2]], current_ths, legIdx % 2 == 0)
@@ -149,6 +149,8 @@ class A1Controller(Node):
                                   msg.orientation.y,
                                   msg.orientation.z,
                                   msg.orientation.w]).as_euler('xyz', degrees=False)
+        
+        self.rp = [self.rpy[0], self.rpy[1]]
         
     def FL_contact_callback(self, msg):
         z_force = msg.contacts[0].wrenches[0].body_1_wrench.force.z

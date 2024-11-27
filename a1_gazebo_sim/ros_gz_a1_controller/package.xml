@@ -3,10 +3,11 @@
 <package format="3">
   <name>ros_gz_a1_controller</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="k-dawg@todo.todo">k-dawg</maintainer>
+  <description>ROS2 Locomotion Controller for Quadruped A1 in Python</description>
+  <maintainer email="karsten.appenzeller@stud.uni-due.de">Karsten Appenzeller</maintainer>
   <license>Apache-2.0</license>
-
+  <author Fatih Özgan>
+  <author Karsten Appenzeller>
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
