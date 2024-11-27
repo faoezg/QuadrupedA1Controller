@@ -6,8 +6,8 @@
   <description>ROS2 Locomotion Controller for Quadruped A1 in Python</description>
   <maintainer email="karsten.appenzeller@stud.uni-due.de">Karsten Appenzeller</maintainer>
   <license>Apache-2.0</license>
-  <author Fatih Özgan>
-  <author Karsten Appenzeller>
+  <author>Fatih Özgan</author>
+  <author>Karsten Appenzeller</author>
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
