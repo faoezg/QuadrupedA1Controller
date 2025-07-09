@@ -47,7 +47,7 @@ ros2 run ros_gz_a1_controller joint_state_publisher
 ```
 and
 ```
-ros2 run ros_gz_a1_controller pose_pub_gui
+ros2 run ros_gz_a1_ui pose_pub_gui
 ```
 
 ### Locomotion Controller:
